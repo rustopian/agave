@@ -10859,8 +10859,7 @@ dependencies = [
 [[package]]
 name = "solana-system-interface"
 version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94d7c18cb1a91c6be5f5a8ac9276a1d7c737e39a21beba9ea710ab4b9c63bc90"
+source = "git+https://github.com/rustopian/system.git?branch=create-account-unchecked#ca16109a95b8a2379d1cf69b4539276ba6db6014"
 dependencies = [
  "js-sys",
  "num-traits",
@@ -10868,6 +10867,8 @@ dependencies = [
  "serde_derive",
  "solana-decode-error",
  "solana-instruction",
+ "solana-msg",
+ "solana-program-error",
  "solana-pubkey",
  "wasm-bindgen",
 ]

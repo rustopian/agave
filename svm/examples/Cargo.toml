@@ -56,7 +56,7 @@ solana-signer = "2.2.1"
 solana-svm = { path = "../" }
 solana-svm-callback = { path = "../../svm-callback" }
 solana-svm-feature-set = { path = "../../svm-feature-set" }
-solana-system-interface = "1.0"
+solana-system-interface = { version = "1.0", git = "https://github.com/rustopian/system.git", branch = "create-account-unchecked", features = ["bincode"] }
 solana-system-program = { path = "../../programs/system" }
 solana-sysvar = "2.2.1"
 solana-sysvar-id = "2.2.1"

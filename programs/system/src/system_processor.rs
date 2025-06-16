@@ -15,7 +15,7 @@ use {
     solana_pubkey::Pubkey,
     solana_sdk_ids::system_program,
     solana_system_interface::{
-        error::SystemError, instruction::SystemInstruction, MAX_PERMITTED_DATA_LENGTH,
+        error::SystemError, instruction::SystemInstruction, MAX_PERMITTED_DATA_LENGTH
     },
     solana_transaction_context::{
         BorrowedAccount, IndexOfAccount, InstructionContext, TransactionContext,
@@ -180,6 +180,38 @@ fn create_account(
     )
 }
 
+/// Create a new account without checking for 0 lamports. Despite `unchecked`, the
+/// called functions still verify data-empty, system-owner, signer-ship,
+/// and data-length bounds. Intended for use where account needs to be topped up
+/// and created (2025 ATA program).
+#[allow(clippy::too_many_arguments)]
+fn create_account_unchecked(
+    from_account_index: IndexOfAccount,
+    to_account_index: IndexOfAccount,
+    to_address: &Address,
+    lamports: u64,
+    space: u64,
+    owner: &Pubkey,
+    signers: &HashSet<Pubkey>,
+    invoke_context: &InvokeContext,
+    transaction_context: &TransactionContext,
+    instruction_context: &InstructionContext,
+) -> Result<(), InstructionError> {
+    {
+        let mut to = instruction_context
+            .try_borrow_instruction_account(transaction_context, to_account_index)?;
+        allocate_and_assign(&mut to, to_address, space, owner, signers, invoke_context)?;
+    }
+    transfer(
+        from_account_index,
+        to_account_index,
+        lamports,
+        invoke_context,
+        transaction_context,
+        instruction_context,
+    )
+}
+
 fn transfer_verified(
     from_account_index: IndexOfAccount,
     to_account_index: IndexOfAccount,
@@ -323,6 +355,32 @@ declare_process_instruction!(Entrypoint, DEFAULT_COMPUTE_UNITS, |invoke_context|
                 invoke_context,
             )?;
             create_account(
+                0,
+                1,
+                &to_address,
+                lamports,
+                space,
+                &owner,
+                &signers,
+                invoke_context,
+                transaction_context,
+                instruction_context,
+            )
+        }
+        SystemInstruction::CreateAccountUnchecked {
+            lamports,
+            space,
+            owner,
+        } => {
+            instruction_context.check_number_of_instruction_accounts(2)?;
+            let to_address = Address::create(
+                transaction_context.get_key_of_account_at_index(
+                    instruction_context.get_index_of_instruction_account_in_transaction(1)?,
+                )?,
+                None,
+                invoke_context,
+            )?;
+            create_account_unchecked(
                 0,
                 1,
                 &to_address,
@@ -2093,5 +2151,255 @@ mod tests {
             assert_eq!(accounts[1].owner(), &solana_sdk_ids::native_loader::id());
             assert_eq!(accounts[1].lamports(), 150);
         }
+    }
+
+    #[test]
+    fn test_create_account_unchecked() {
+        let new_owner = Pubkey::from([9; 32]);
+        let from = Pubkey::new_unique();
+        let to = Pubkey::new_unique();
+        let from_account = AccountSharedData::new(100, 0, &system_program::id());
+        let to_account = AccountSharedData::new(0, 0, &Pubkey::default());
+
+        let accounts = process_instruction(
+            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+                lamports: 50,
+                space: 2,
+                owner: new_owner,
+            })
+            .unwrap(),
+            vec![(from, from_account), (to, to_account)],
+            vec![
+                AccountMeta {
+                    pubkey: from,
+                    is_signer: true,
+                    is_writable: true,
+                },
+                AccountMeta {
+                    pubkey: to,
+                    is_signer: true,
+                    is_writable: true,
+                },
+            ],
+            Ok(()),
+        );
+        assert_eq!(accounts[0].lamports(), 50);
+        assert_eq!(accounts[1].lamports(), 50);
+        assert_eq!(accounts[1].owner(), &new_owner);
+        assert_eq!(accounts[1].data(), &[0, 0]);
+    }
+
+    #[test]
+    fn test_create_account_unchecked_nonzero_lamports() {
+        let new_owner = Pubkey::from([9; 32]);
+        let from = Pubkey::new_unique();
+        let to = Pubkey::new_unique();
+        let from_account = AccountSharedData::new(100, 0, &system_program::id());
+        let to_account = AccountSharedData::new(100, 0, &Pubkey::default());
+
+        let accounts = process_instruction(
+            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+                lamports: 50,
+                space: 2,
+                owner: new_owner,
+            })
+            .unwrap(),
+            vec![(from, from_account), (to, to_account)],
+            vec![
+                AccountMeta {
+                    pubkey: from,
+                    is_signer: true,
+                    is_writable: true,
+                },
+                AccountMeta {
+                    pubkey: to,
+                    is_signer: true,
+                    is_writable: true,
+                },
+            ],
+            Ok(()),
+        );
+        assert_eq!(accounts[0].lamports(), 50);
+        assert_eq!(accounts[1].lamports(), 150);
+        assert_eq!(accounts[1].owner(), &new_owner);
+        assert_eq!(accounts[1].data(), &[0, 0]);
+    }
+
+    #[test]
+    fn test_create_account_unchecked_data_populated_fail() {
+        let new_owner = Pubkey::from([9; 32]);
+        let from = Pubkey::new_unique();
+        let from_account = AccountSharedData::new(100, 0, &system_program::id());
+        let owned_key = Pubkey::new_unique();
+
+        // Attempt to create system account in account that already has data
+        let owned_account = AccountSharedData::new(0, 1, &Pubkey::default());
+        let unchanged_account = owned_account.clone();
+        let accounts = process_instruction(
+            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+                lamports: 50,
+                space: 2,
+                owner: new_owner,
+            })
+            .unwrap(),
+            vec![(from, from_account), (owned_key, owned_account)],
+            vec![
+                AccountMeta {
+                    pubkey: from,
+                    is_signer: true,
+                    is_writable: true,
+                },
+                AccountMeta {
+                    pubkey: owned_key,
+                    is_signer: true,
+                    is_writable: true,
+                },
+            ],
+            Err(SystemError::AccountAlreadyInUse.into()),
+        );
+        assert_eq!(accounts[0].lamports(), 100);
+        assert_eq!(accounts[1], unchanged_account);
+    }
+
+    #[test]
+    fn test_create_account_unchecked_wrong_owner_fail() {
+        let new_owner = Pubkey::from([9; 32]);
+        let from = Pubkey::new_unique();
+        let from_account = AccountSharedData::new(100, 0, &system_program::id());
+        let owned_key = Pubkey::new_unique();
+
+        // Attempt to create system account in account already owned by another program
+        let original_program_owner = Pubkey::from([5; 32]);
+        let owned_account = AccountSharedData::new(0, 0, &original_program_owner);
+        let unchanged_account = owned_account.clone();
+        let accounts = process_instruction(
+            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+                lamports: 50,
+                space: 2,
+                owner: new_owner,
+            })
+            .unwrap(),
+            vec![(from, from_account), (owned_key, owned_account)],
+            vec![
+                AccountMeta {
+                    pubkey: from,
+                    is_signer: true,
+                    is_writable: true,
+                },
+                AccountMeta {
+                    pubkey: owned_key,
+                    is_signer: true,
+                    is_writable: true,
+                },
+            ],
+            Err(SystemError::AccountAlreadyInUse.into()),
+        );
+        assert_eq!(accounts[0].lamports(), 100);
+        assert_eq!(accounts[1], unchanged_account);
+    }
+
+    #[test]
+    fn test_create_account_unchecked_missing_signer_fail() {
+        let new_owner = Pubkey::from([9; 32]);
+        let from = Pubkey::new_unique();
+        let from_account = AccountSharedData::new(100, 0, &system_program::id());
+        let owned_key = Pubkey::new_unique();
+        let owned_account = AccountSharedData::new(0, 0, &Pubkey::default());
+
+        // Haven't signed from account
+        process_instruction(
+            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+                lamports: 50,
+                space: 2,
+                owner: new_owner,
+            })
+            .unwrap(),
+            vec![(from, from_account.clone()), (owned_key, owned_account.clone())],
+            vec![
+                AccountMeta {
+                    pubkey: from,
+                    is_signer: false,
+                    is_writable: true,
+                },
+                AccountMeta {
+                    pubkey: owned_key,
+                    is_signer: true,
+                    is_writable: true,
+                },
+            ],
+            Err(InstructionError::MissingRequiredSignature),
+        );
+
+        // Haven't signed to account
+        process_instruction(
+            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+                lamports: 50,
+                space: 2,
+                owner: new_owner,
+            })
+            .unwrap(),
+            vec![(from, from_account), (owned_key, owned_account)],
+            vec![
+                AccountMeta {
+                    pubkey: from,
+                    is_signer: true,
+                    is_writable: true,
+                },
+                AccountMeta {
+                    pubkey: owned_key,
+                    is_signer: false,
+                    is_writable: true,
+                },
+            ],
+            Err(InstructionError::MissingRequiredSignature),
+        );
+    }
+
+    #[test]
+    fn test_create_account_unchecked_oversize_space_fail() {
+        let from = Pubkey::new_unique();
+        let from_account = AccountSharedData::new(100, 0, &system_program::id());
+        let to = Pubkey::new_unique();
+        let to_account = AccountSharedData::new(0, 0, &Pubkey::default());
+        let instruction_accounts = vec![
+            AccountMeta {
+                pubkey: from,
+                is_signer: true,
+                is_writable: true,
+            },
+            AccountMeta {
+                pubkey: to,
+                is_signer: true,
+                is_writable: true,
+            },
+        ];
+
+        // Trying to request more data length than permitted will result in failure
+        process_instruction(
+            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+                lamports: 50,
+                space: MAX_PERMITTED_DATA_LENGTH + 1,
+                owner: system_program::id(),
+            })
+            .unwrap(),
+            vec![(from, from_account.clone()), (to, to_account.clone())],
+            instruction_accounts.clone(),
+            Err(SystemError::InvalidAccountDataLength.into()),
+        );
+
+        // Trying to request equal or less data length than permitted will be successful
+        let accounts = process_instruction(
+            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+                lamports: 50,
+                space: MAX_PERMITTED_DATA_LENGTH,
+                owner: system_program::id(),
+            })
+            .unwrap(),
+            vec![(from, from_account), (to, to_account)],
+            instruction_accounts,
+            Ok(()),
+        );
+        assert_eq!(accounts[1].lamports(), 50);
+        assert_eq!(accounts[1].data().len() as u64, MAX_PERMITTED_DATA_LENGTH);
     }
 }
