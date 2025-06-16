@@ -15,7 +15,7 @@ use {
     solana_pubkey::Pubkey,
     solana_sdk_ids::system_program,
     solana_system_interface::{
-        error::SystemError, instruction::SystemInstruction, MAX_PERMITTED_DATA_LENGTH
+        error::SystemError, instruction::SystemInstruction, MAX_PERMITTED_DATA_LENGTH,
     },
     solana_transaction_context::{
         BorrowedAccount, IndexOfAccount, InstructionContext, TransactionContext,
@@ -2314,7 +2314,10 @@ mod tests {
                 owner: new_owner,
             })
             .unwrap(),
-            vec![(from, from_account.clone()), (owned_key, owned_account.clone())],
+            vec![
+                (from, from_account.clone()),
+                (owned_key, owned_account.clone()),
+            ],
             vec![
                 AccountMeta {
                     pubkey: from,
