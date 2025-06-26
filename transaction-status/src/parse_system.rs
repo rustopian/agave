@@ -41,7 +41,7 @@ pub fn parse_system(
                 }),
             })
         }
-        SystemInstruction::CreateAccountUnchecked {
+        SystemInstruction::CreateAccountPrefunded {
             lamports,
             space,
             owner,
@@ -685,14 +685,14 @@ mod test {
     }
 
     #[test]
-    fn test_parse_system_create_account_unchecked_ix() {
+    fn test_parse_system_create_account_prefunded_ix() {
         let lamports = 55;
         let space = 128;
         let from_pubkey = Pubkey::new_unique();
         let to_pubkey = Pubkey::new_unique();
         let owner_pubkey = Pubkey::new_unique();
 
-        let instruction = system_instruction::create_account_unchecked(
+        let instruction = system_instruction::create_account_prefunded(
             &from_pubkey,
             &to_pubkey,
             lamports,

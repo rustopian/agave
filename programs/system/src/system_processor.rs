@@ -185,7 +185,7 @@ fn create_account(
 /// and data-length bounds. Intended for use where account needs to be topped up
 /// and created (2025 ATA program).
 #[allow(clippy::too_many_arguments)]
-fn create_account_unchecked(
+fn create_account_prefunded(
     from_account_index: IndexOfAccount,
     to_account_index: IndexOfAccount,
     to_address: &Address,
@@ -367,7 +367,7 @@ declare_process_instruction!(Entrypoint, DEFAULT_COMPUTE_UNITS, |invoke_context|
                 instruction_context,
             )
         }
-        SystemInstruction::CreateAccountUnchecked {
+        SystemInstruction::CreateAccountPrefunded {
             lamports,
             space,
             owner,
@@ -380,7 +380,7 @@ declare_process_instruction!(Entrypoint, DEFAULT_COMPUTE_UNITS, |invoke_context|
                 None,
                 invoke_context,
             )?;
-            create_account_unchecked(
+            create_account_prefunded(
                 0,
                 1,
                 &to_address,
@@ -2154,7 +2154,7 @@ mod tests {
     }
 
     #[test]
-    fn test_create_account_unchecked() {
+    fn test_create_account_prefunded() {
         let new_owner = Pubkey::from([9; 32]);
         let from = Pubkey::new_unique();
         let to = Pubkey::new_unique();
@@ -2162,7 +2162,7 @@ mod tests {
         let to_account = AccountSharedData::new(0, 0, &Pubkey::default());
 
         let accounts = process_instruction(
-            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+            &bincode::serialize(&SystemInstruction::CreateAccountPrefunded {
                 lamports: 50,
                 space: 2,
                 owner: new_owner,
@@ -2190,7 +2190,7 @@ mod tests {
     }
 
     #[test]
-    fn test_create_account_unchecked_nonzero_lamports() {
+    fn test_create_account_prefunded_nonzero_lamports() {
         let new_owner = Pubkey::from([9; 32]);
         let from = Pubkey::new_unique();
         let to = Pubkey::new_unique();
@@ -2198,7 +2198,7 @@ mod tests {
         let to_account = AccountSharedData::new(100, 0, &Pubkey::default());
 
         let accounts = process_instruction(
-            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+            &bincode::serialize(&SystemInstruction::CreateAccountPrefunded {
                 lamports: 50,
                 space: 2,
                 owner: new_owner,
@@ -2226,7 +2226,7 @@ mod tests {
     }
 
     #[test]
-    fn test_create_account_unchecked_data_populated_fail() {
+    fn test_create_account_prefunded_data_populated_fail() {
         let new_owner = Pubkey::from([9; 32]);
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &system_program::id());
@@ -2236,7 +2236,7 @@ mod tests {
         let owned_account = AccountSharedData::new(0, 1, &Pubkey::default());
         let unchanged_account = owned_account.clone();
         let accounts = process_instruction(
-            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+            &bincode::serialize(&SystemInstruction::CreateAccountPrefunded {
                 lamports: 50,
                 space: 2,
                 owner: new_owner,
@@ -2262,7 +2262,7 @@ mod tests {
     }
 
     #[test]
-    fn test_create_account_unchecked_wrong_owner_fail() {
+    fn test_create_account_prefunded_wrong_owner_fail() {
         let new_owner = Pubkey::from([9; 32]);
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &system_program::id());
@@ -2273,7 +2273,7 @@ mod tests {
         let owned_account = AccountSharedData::new(0, 0, &original_program_owner);
         let unchanged_account = owned_account.clone();
         let accounts = process_instruction(
-            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+            &bincode::serialize(&SystemInstruction::CreateAccountPrefunded {
                 lamports: 50,
                 space: 2,
                 owner: new_owner,
@@ -2299,7 +2299,7 @@ mod tests {
     }
 
     #[test]
-    fn test_create_account_unchecked_missing_signer_fail() {
+    fn test_create_account_prefunded_missing_signer_fail() {
         let new_owner = Pubkey::from([9; 32]);
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &system_program::id());
@@ -2308,7 +2308,7 @@ mod tests {
 
         // Haven't signed from account
         process_instruction(
-            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+            &bincode::serialize(&SystemInstruction::CreateAccountPrefunded {
                 lamports: 50,
                 space: 2,
                 owner: new_owner,
@@ -2335,7 +2335,7 @@ mod tests {
 
         // Haven't signed to account
         process_instruction(
-            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+            &bincode::serialize(&SystemInstruction::CreateAccountPrefunded {
                 lamports: 50,
                 space: 2,
                 owner: new_owner,
@@ -2359,7 +2359,7 @@ mod tests {
     }
 
     #[test]
-    fn test_create_account_unchecked_oversize_space_fail() {
+    fn test_create_account_prefunded_oversize_space_fail() {
         let from = Pubkey::new_unique();
         let from_account = AccountSharedData::new(100, 0, &system_program::id());
         let to = Pubkey::new_unique();
@@ -2379,7 +2379,7 @@ mod tests {
 
         // Trying to request more data length than permitted will result in failure
         process_instruction(
-            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+            &bincode::serialize(&SystemInstruction::CreateAccountPrefunded {
                 lamports: 50,
                 space: MAX_PERMITTED_DATA_LENGTH + 1,
                 owner: system_program::id(),
@@ -2392,7 +2392,7 @@ mod tests {
 
         // Trying to request equal or less data length than permitted will be successful
         let accounts = process_instruction(
-            &bincode::serialize(&SystemInstruction::CreateAccountUnchecked {
+            &bincode::serialize(&SystemInstruction::CreateAccountPrefunded {
                 lamports: 50,
                 space: MAX_PERMITTED_DATA_LENGTH,
                 owner: system_program::id(),
