@@ -10859,7 +10859,7 @@ dependencies = [
 [[package]]
 name = "solana-system-interface"
 version = "1.0.0"
-source = "git+https://github.com/rustopian/system.git?branch=create-account-unchecked#76543c1c53e4bbd555818cf67475c6022e818bc0"
+source = "git+https://github.com/rustopian/system.git?branch=create-account-prefunded#76543c1c53e4bbd555818cf67475c6022e818bc0"
 dependencies = [
  "js-sys",
  "num-traits",

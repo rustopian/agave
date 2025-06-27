@@ -526,7 +526,7 @@ solana-svm-conformance = { path = "svm-conformance", version = "=3.0.0" }
 solana-svm-feature-set = { path = "svm-feature-set", version = "=3.0.0" }
 solana-svm-rent-collector = { path = "svm-rent-collector", version = "=3.0.0" }
 solana-svm-transaction = { path = "svm-transaction", version = "=3.0.0" }
-solana-system-interface = { version = "1.0", git = "https://github.com/rustopian/system.git", branch = "create-account-unchecked", features = ["bincode"] }
+solana-system-interface = { version = "1.0", git = "https://github.com/rustopian/system.git", branch = "create-account-prefunded", features = ["bincode"] }
 solana-system-program = { path = "programs/system", version = "=3.0.0" }
 solana-system-transaction = "2.2.1"
 solana-sysvar = "2.2.2"
@@ -676,5 +676,5 @@ crossbeam-epoch = { git = "https://github.com/anza-xyz/crossbeam", rev = "fd279d
 solana-curve25519 = { path = "curves/curve25519" }
 solana-zk-sdk = { path = "zk-sdk" }
 
-# Patching in create-account-unchecked interface until merged
-solana-system-interface = { version = "1.0", git = "https://github.com/rustopian/system.git", branch = "create-account-unchecked", features = ["bincode"] }
+# Patching in create-account-prefunded interface until merged
+solana-system-interface = { version = "1.0", git = "https://github.com/rustopian/system.git", branch = "create-account-prefunded", features = ["bincode"] }

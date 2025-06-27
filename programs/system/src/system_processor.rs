@@ -372,6 +372,10 @@ declare_process_instruction!(Entrypoint, DEFAULT_COMPUTE_UNITS, |invoke_context|
             space,
             owner,
         } => {
+            if !invoke_context.get_feature_set().create_account_prefunded {
+                return Err(InstructionError::InvalidInstructionData);
+            }
+
             instruction_context.check_number_of_instruction_accounts(2)?;
             let to_address = Address::create(
                 transaction_context.get_key_of_account_at_index(

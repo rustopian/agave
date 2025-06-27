@@ -39,6 +39,7 @@ pub struct SVMFeatureSet {
     pub formalize_loaded_transaction_data_size: bool,
     pub disable_zk_elgamal_proof_program: bool,
     pub reenable_zk_elgamal_proof_program: bool,
+    pub create_account_prefunded: bool,
 }
 
 impl SVMFeatureSet {
@@ -83,6 +84,7 @@ impl SVMFeatureSet {
             formalize_loaded_transaction_data_size: true,
             disable_zk_elgamal_proof_program: true,
             reenable_zk_elgamal_proof_program: true,
+            create_account_prefunded: true,
         }
     }
 }
