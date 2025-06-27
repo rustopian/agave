@@ -2409,4 +2409,56 @@ mod tests {
         assert_eq!(accounts[1].lamports(), 50);
         assert_eq!(accounts[1].data().len() as u64, MAX_PERMITTED_DATA_LENGTH);
     }
+
+    #[test]
+    fn test_create_account_prefunded_feature_gate_off() {
+        use solana_instruction::AccountMeta;
+        use solana_program_runtime::invoke_context::mock_process_instruction_with_feature_set;
+        use solana_svm_feature_set::SVMFeatureSet;
+
+        let feature_set = SVMFeatureSet::default();
+
+        let new_owner = Pubkey::new_unique();
+        let from = Pubkey::new_unique();
+        let to = Pubkey::new_unique();
+        let from_account = AccountSharedData::new(100, 0, &system_program::id());
+        let to_account = AccountSharedData::new(0, 0, &Pubkey::default());
+
+        // Build the instruction data for CreateAccountPrefunded
+        let ix_data = bincode::serialize(&SystemInstruction::CreateAccountPrefunded {
+            lamports: 50,
+            space: 0,
+            owner: new_owner,
+        })
+        .unwrap();
+
+        // Prepare accounts vectors
+        let tx_accounts = vec![(from, from_account), (to, to_account)];
+        let ix_accounts = vec![
+            AccountMeta {
+                pubkey: from,
+                is_signer: true,
+                is_writable: true,
+            },
+            AccountMeta {
+                pubkey: to,
+                is_signer: true,
+                is_writable: true,
+            },
+        ];
+
+        // Process with feature disabled and expect InvalidInstructionData
+        mock_process_instruction_with_feature_set(
+            &system_program::id(),
+            Vec::new(),
+            &ix_data,
+            tx_accounts,
+            ix_accounts,
+            Err(InstructionError::InvalidInstructionData),
+            Entrypoint::vm,
+            |_invoke_context| {},
+            |_invoke_context| {},
+            &feature_set,
+        );
+    }
 }
