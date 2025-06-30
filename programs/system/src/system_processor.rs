@@ -180,10 +180,9 @@ fn create_account(
     )
 }
 
-/// Create a new account without checking for 0 lamports. Despite `unchecked`, the
-/// called functions still verify data-empty, system-owner, signer-ship,
-/// and data-length bounds. Intended for use where account needs to be topped up
-/// and created (2025 ATA program).
+/// Create a new account without checking for 0 lamports. All other checks remain.
+/// Intended for use where account has already had rent paid in whole or in part
+/// before creation.
 #[allow(clippy::too_many_arguments)]
 fn create_account_prefunded(
     from_account_index: IndexOfAccount,
