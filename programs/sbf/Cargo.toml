@@ -301,4 +301,3 @@ name = "bpf_loader"
 solana-curve25519 = { path = "../../curves/curve25519" }
 solana-zk-sdk = { path = "../../zk-sdk" }
 solana-system-interface = { version = "1.0", git = "https://github.com/rustopian/system.git", branch = "create-account-prefunded", features = ["bincode"] }
-
