@@ -28,9 +28,11 @@ Release channels have their own copy of this changelog:
   * `--replay-slots-concurrently`
   * `--rpc-pubsub-max-connections`, `--rpc-pubsub-max-fragment-size`, `--rpc-pubsub-max-in-buffer-capacity`, `--rpc-pubsub-max-out-buffer-capacity`, `--enable-cpi-and-log-storage`, `--minimal-rpc-api`
   * `--skip-poh-verify`
+* Deprecated snapshot archive formats have been removed and are no longer loadable.
+* Using `--snapshot-interval-slots 0` to disable generating snapshots has been removed. Use `--no-snapshots` instead.
 
 #### Changes
-* Deprecated snapshot archive formats have been removed and are no longer loadable.
+* Reading snapshot archives requires increased `memlock` limits - recommended setting is `LimitMEMLOCK=2000000000` in systemd service configuration. Lack of sufficient limit will result slower startup times.
 
 ## 2.3.0
 
@@ -48,6 +50,7 @@ Release channels have their own copy of this changelog:
 
 #### Deprecations
 * Using `--snapshot-interval-slots 0` to disable generating snapshots is now deprecated.
+* Using `blockstore-processor` for `--block-verification-method` is now deprecated.
 
 ### Platform Tools SDK
 
@@ -259,11 +262,8 @@ This simplifies the process of diffing between versions of the log.
   * Update the edge, beta, and stable links
   * Create new section: `vx.y+1.0 - Unreleased`
   * Remove `Unreleased` annotation from vx.y.0 section.
-* Create vx.y branch starting at that commit
-* Tag that commit as vx.y.0
-
-### When creating a new patch release:
-* Commit to the release branch updating the changelog:
-  * Remove `Unreleased` annotation from `vx.y.z` section
-  * Add a new section at the top for `vx.y.z+1 - Unreleased`
-* Tag that new commit as the new release
+* Create vx.y branch starting at that commit.
+* Commit to `vx.y` updating the changelog:
+  * Remove the `vx.y+1.0 - Unreleased` section
+  * Remove the channel links
+* Tag vx.y.0 on the new branch

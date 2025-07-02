@@ -177,9 +177,8 @@ fn run_generate_index_duplicates_within_slot_test(db: AccountsDb, reverse: bool)
     // construct append vec with account to generate an index from
     append_vec.accounts.append_accounts(&storable_accounts, 0);
 
-    let genesis_config = GenesisConfig::default();
     assert!(!db.accounts_index.contains(&pubkey));
-    let result = db.generate_index(None, false, &genesis_config, false);
+    let result = db.generate_index(None, false, false);
     // index entry should only contain a single entry for the pubkey since index cannot hold more than 1 entry per slot
     let entry = db.accounts_index.get_cloned(&pubkey).unwrap();
     assert_eq!(entry.slot_list.read().unwrap().len(), 1);
@@ -217,9 +216,8 @@ fn test_generate_index_for_single_ref_zero_lamport_slot() {
     let data = [(&pubkey, &account)];
     let storable_accounts = (slot0, &data[..]);
     append_vec.accounts.append_accounts(&storable_accounts, 0);
-    let genesis_config = GenesisConfig::default();
     assert!(!db.accounts_index.contains(&pubkey));
-    let result = db.generate_index(None, false, &genesis_config, false);
+    let result = db.generate_index(None, false, false);
     let entry = db.accounts_index.get_cloned(&pubkey).unwrap();
     assert_eq!(entry.slot_list.read().unwrap().len(), 1);
     assert_eq!(append_vec.alive_bytes(), aligned_stored_size(0));
@@ -2107,8 +2105,6 @@ fn test_hash_stored_account() {
 
 pub static EPOCH_SCHEDULE: std::sync::LazyLock<EpochSchedule> =
     std::sync::LazyLock::new(EpochSchedule::default);
-pub static RENT_COLLECTOR: std::sync::LazyLock<RentCollector> =
-    std::sync::LazyLock::new(RentCollector::default);
 
 impl CalcAccountsHashConfig<'_> {
     pub(crate) fn default() -> Self {
@@ -2116,7 +2112,7 @@ impl CalcAccountsHashConfig<'_> {
             use_bg_thread_pool: false,
             ancestors: None,
             epoch_schedule: &EPOCH_SCHEDULE,
-            rent_collector: &RENT_COLLECTOR,
+            epoch: 0,
             store_detailed_debug_info_on_failure: false,
         }
     }
@@ -2133,17 +2129,14 @@ fn test_verify_accounts_hash() {
     let account = AccountSharedData::new(1, some_data_len, &key);
     let ancestors = vec![(some_slot, 0)].into_iter().collect();
     let epoch_schedule = EpochSchedule::default();
-    let rent_collector = RentCollector::default();
+    let epoch = Epoch::default();
 
     db.store_for_tests(some_slot, &[(&key, &account)]);
     db.add_root_and_flush_write_cache(some_slot);
     let (_, capitalization) = db.update_accounts_hash_for_tests(some_slot, &ancestors, true, true);
 
-    let config = VerifyAccountsHashAndLamportsConfig::new_for_test(
-        &ancestors,
-        &epoch_schedule,
-        &rent_collector,
-    );
+    let config =
+        VerifyAccountsHashAndLamportsConfig::new_for_test(&ancestors, &epoch_schedule, epoch);
 
     assert_matches!(
         db.verify_accounts_hash_and_lamports_for_tests(some_slot, 1, config.clone()),
@@ -2183,12 +2176,9 @@ fn test_verify_bank_capitalization() {
         let account = AccountSharedData::new(1, some_data_len, &key);
         let ancestors = vec![(some_slot, 0)].into_iter().collect();
         let epoch_schedule = EpochSchedule::default();
-        let rent_collector = RentCollector::default();
-        let config = VerifyAccountsHashAndLamportsConfig::new_for_test(
-            &ancestors,
-            &epoch_schedule,
-            &rent_collector,
-        );
+        let epoch = Epoch::default();
+        let config =
+            VerifyAccountsHashAndLamportsConfig::new_for_test(&ancestors, &epoch_schedule, epoch);
 
         db.store_for_tests(some_slot, &[(&key, &account)]);
         if pass == 0 {
@@ -2237,12 +2227,9 @@ fn test_verify_accounts_hash_no_account() {
     db.update_accounts_hash_for_tests(some_slot, &ancestors, true, true);
 
     let epoch_schedule = EpochSchedule::default();
-    let rent_collector = RentCollector::default();
-    let config = VerifyAccountsHashAndLamportsConfig::new_for_test(
-        &ancestors,
-        &epoch_schedule,
-        &rent_collector,
-    );
+    let epoch = Epoch::default();
+    let config =
+        VerifyAccountsHashAndLamportsConfig::new_for_test(&ancestors, &epoch_schedule, epoch);
 
     assert_matches!(
         db.verify_accounts_hash_and_lamports_for_tests(some_slot, 0, config),
@@ -2269,12 +2256,9 @@ fn test_verify_accounts_hash_bad_account_hash() {
     db.add_root_and_flush_write_cache(some_slot);
 
     let epoch_schedule = EpochSchedule::default();
-    let rent_collector = RentCollector::default();
-    let config = VerifyAccountsHashAndLamportsConfig::new_for_test(
-        &ancestors,
-        &epoch_schedule,
-        &rent_collector,
-    );
+    let epoch = Epoch::default();
+    let config =
+        VerifyAccountsHashAndLamportsConfig::new_for_test(&ancestors, &epoch_schedule, epoch);
 
     assert_matches!(
         db.verify_accounts_hash_and_lamports_for_tests(some_slot, 1, config),
@@ -2378,7 +2362,7 @@ fn test_get_snapshot_storages_exclude_empty() {
     db.storage
         .get_slot_storage_entry(0)
         .unwrap()
-        .remove_accounts(0, true, 1);
+        .remove_accounts(0, 1);
     assert!(db.get_storages(..=after_slot).0.is_empty());
 }
 
@@ -2405,8 +2389,8 @@ define_accounts_db_test!(
         accounts.store_for_tests(0, &[(&pubkey, &account)]);
         accounts.add_root_and_flush_write_cache(0);
         let storage_entry = accounts.storage.get_slot_storage_entry(0).unwrap();
-        storage_entry.remove_accounts(0, true, 1);
-        storage_entry.remove_accounts(0, true, 1);
+        storage_entry.remove_accounts(0, 1);
+        storage_entry.remove_accounts(0, 1);
     }
 );
 
@@ -3869,6 +3853,7 @@ impl AccountsDb {
 define_accounts_db_test!(test_alive_bytes, |accounts_db| {
     let slot: Slot = 0;
     let num_keys = 10;
+    let mut num_obsolete_accounts = 0;
 
     for data_size in 0..num_keys {
         let account = AccountSharedData::new(1, data_size, &Pubkey::default());
@@ -3894,15 +3879,18 @@ define_accounts_db_test!(test_alive_bytes, |accounts_db| {
             [0];
         assert_eq!(account_info.0, slot);
         let reclaims = [account_info];
-        accounts_db.remove_dead_accounts(reclaims.iter(), None, true);
+        num_obsolete_accounts += reclaims.len();
+        accounts_db.remove_dead_accounts(reclaims.iter(), None, MarkAccountsObsolete::Yes(slot));
         let after_size = storage0.alive_bytes();
-        if storage0.count() == 0
-            && AccountsFileProvider::HotStorage == accounts_db.accounts_file_provider
-        {
+        if storage0.count() == 0 {
             // when `remove_dead_accounts` reaches 0 accounts, all bytes are marked as dead
             assert_eq!(after_size, 0);
         } else {
             assert_eq!(before_size, after_size + account.stored_size_aligned);
+            assert_eq!(
+                storage0.get_obsolete_accounts(None).len(),
+                num_obsolete_accounts
+            );
         }
     });
 });
@@ -5061,7 +5049,7 @@ fn test_shrink_productive() {
     ));
     store.add_account(file_size as usize / 2);
     store.add_account(file_size as usize / 4);
-    store.remove_accounts(file_size as usize / 4, false, 1);
+    store.remove_accounts(file_size as usize / 4, 1);
     assert!(AccountsDb::is_shrinking_productive(&store));
 
     store.add_account(file_size as usize / 2);
@@ -5129,7 +5117,7 @@ define_accounts_db_test!(test_calculate_storage_count_and_alive_bytes, |accounts
 
     let storage = accounts.storage.get_slot_storage_entry(slot0).unwrap();
     let storage_info = StorageSizeAndCountMap::default();
-    accounts.generate_index_for_slot(&storage, slot0, 0, &RentCollector::default(), &storage_info);
+    accounts.generate_index_for_slot(&storage, slot0, 0, &storage_info);
     assert_eq!(storage_info.len(), 1);
     for entry in storage_info.iter() {
         let expected_stored_size =
@@ -5152,7 +5140,7 @@ define_accounts_db_test!(
         // empty store
         let storage = accounts.create_and_insert_store(0, 1, "test");
         let storage_info = StorageSizeAndCountMap::default();
-        accounts.generate_index_for_slot(&storage, 0, 0, &RentCollector::default(), &storage_info);
+        accounts.generate_index_for_slot(&storage, 0, 0, &storage_info);
         assert!(storage_info.is_empty());
     }
 );
@@ -5188,7 +5176,7 @@ define_accounts_db_test!(
         );
 
         let storage_info = StorageSizeAndCountMap::default();
-        accounts.generate_index_for_slot(&storage, 0, 0, &RentCollector::default(), &storage_info);
+        accounts.generate_index_for_slot(&storage, 0, 0, &storage_info);
         assert_eq!(storage_info.len(), 1);
         for entry in storage_info.iter() {
             let expected_stored_size =
@@ -6127,29 +6115,48 @@ fn test_hash_storage_info() {
         let mark_alive = false;
         let storage = sample_storage_with_entries(&tf, slot, &pubkey1, mark_alive);
 
-        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot);
+        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot, slot);
         let hash = hasher.finish();
         // can't assert hash here - it is a function of mod date
         assert!(load);
         let slot = 2; // changed this
         let mut hasher = DefaultHasher::new();
-        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot);
+        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot, slot);
         let hash2 = hasher.finish();
         assert_ne!(hash, hash2); // slot changed, these should be different
                                  // can't assert hash here - it is a function of mod date
         assert!(load);
         let mut hasher = DefaultHasher::new();
         append_sample_data_to_storage(&storage, &solana_pubkey::new_rand(), false, None);
-        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot);
+        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot, slot);
         let hash3 = hasher.finish();
         assert_ne!(hash2, hash3); // moddate and written size changed
                                   // can't assert hash here - it is a function of mod date
         assert!(load);
         let mut hasher = DefaultHasher::new();
-        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot);
+        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot, slot);
         let hash4 = hasher.finish();
         assert_eq!(hash4, hash3); // same
                                   // can't assert hash here - it is a function of mod date
+
+        assert!(load);
+        let mut hasher = DefaultHasher::new();
+        storage.mark_accounts_obsolete(vec![(0, 136)].into_iter(), slot + 1);
+        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot, slot);
+        let hash5 = hasher.finish();
+        assert_eq!(hash5, hash4); // Obsolete accounts hasn't changed, as the obsolete account is newer than the slot being hashed
+        assert!(load);
+
+        let mut hasher = DefaultHasher::new();
+        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot, slot + 1);
+        let hash6 = hasher.finish();
+        assert_ne!(hash6, hash5); // Obsolete accounts has changed, as the obsolete account is now included in the hash
+        assert!(load);
+
+        let mut hasher = DefaultHasher::new();
+        let load = AccountsDb::hash_storage_info(&mut hasher, &storage, slot, slot + 2);
+        let hash7 = hasher.finish();
+        assert_eq!(hash7, hash6); // Nothing has changed even though the slot that the hash is being performed at has changed.
         assert!(load);
     }
 }
@@ -6560,7 +6567,7 @@ fn get_all_accounts_from_storages<'a>(
     storages
         .flat_map(|storage| {
             let mut vec = Vec::default();
-            storage.accounts.scan_accounts(|account| {
+            storage.accounts.scan_accounts(|_offset, account| {
                 vec.push((*account.pubkey(), account.to_account_shared_data()));
             });
             // make sure scan_pubkeys results match
@@ -6808,12 +6815,8 @@ fn populate_index(db: &AccountsDb, slots: Range<Slot>) {
     })
 }
 
-pub(crate) fn remove_account_for_tests(
-    storage: &AccountStorageEntry,
-    num_bytes: usize,
-    reset_accounts: bool,
-) {
-    storage.remove_accounts(num_bytes, reset_accounts, 1);
+pub(crate) fn remove_account_for_tests(storage: &AccountStorageEntry, num_bytes: usize) {
+    storage.remove_accounts(num_bytes, 1);
 }
 
 pub(crate) fn create_storages_and_update_index_with_customized_account_size_per_slot(
