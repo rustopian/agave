@@ -201,14 +201,17 @@ fn create_account_prefunded(
             .try_borrow_instruction_account(transaction_context, to_account_index)?;
         allocate_and_assign(&mut to, to_address, space, owner, signers, invoke_context)?;
     }
-    transfer(
-        from_account_index,
-        to_account_index,
-        lamports,
-        invoke_context,
-        transaction_context,
-        instruction_context,
-    )
+    if lamports > 0 {
+        transfer(
+            from_account_index,
+            to_account_index,
+            lamports,
+            invoke_context,
+            transaction_context,
+            instruction_context,
+        )?;
+    }
+    Ok(())
 }
 
 fn transfer_verified(
