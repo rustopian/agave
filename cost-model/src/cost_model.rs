@@ -234,7 +234,7 @@ impl CostModel {
     ) -> SystemProgramAccountAllocation {
         match instruction {
             SystemInstruction::CreateAccount { space, .. }
-            | SystemInstruction::CreateAccountPrefunded { space, .. }
+            | SystemInstruction::CreatePrefundedAccount { space, .. }
             | SystemInstruction::CreateAccountWithSeed { space, .. }
             | SystemInstruction::Allocate { space }
             | SystemInstruction::AllocateWithSeed { space, .. } => {
@@ -479,7 +479,7 @@ mod tests {
                 space,
                 owner,
             },
-            SystemInstruction::CreateAccountPrefunded {
+            SystemInstruction::CreatePrefundedAccount {
                 lamports,
                 space,
                 owner,

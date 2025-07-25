@@ -158,7 +158,8 @@ impl FeatureSet {
                 .is_active(&disable_zk_elgamal_proof_program::id()),
             reenable_zk_elgamal_proof_program: self
                 .is_active(&reenable_zk_elgamal_proof_program::id()),
-            create_account_prefunded: self.is_active(&create_account_prefunded::id()),
+            disable_rent_fees_collection: self.is_active(&disable_rent_fees_collection::id()),
+            create_prefunded_account: self.is_active(&create_prefunded_account::id()),
         }
     }
 }
@@ -1117,7 +1118,7 @@ pub mod reenable_zk_elgamal_proof_program {
     solana_pubkey::declare_id!("zkemPXcuM3G4wpMDZ36Cpw34EjUpvm1nuioiSGbGZPR");
 }
 
-pub mod create_account_prefunded {
+pub mod create_prefunded_account {
     solana_pubkey::declare_id!("CbwrtjKe4bGf4tyMU2AnRyzHL7Du93jxynFdGvmoNgDw");
 }
 
@@ -1360,7 +1361,7 @@ pub static FEATURE_NAMES: LazyLock<AHashMap<Pubkey, &'static str>> = LazyLock::n
         (alpenglow::id(), "Enable Alpenglow"),
         (disable_zk_elgamal_proof_program::id(), "Disables zk-elgamal-proof program"),
         (reenable_zk_elgamal_proof_program::id(), "Re-enables zk-elgamal-proof program"),
-        (create_account_prefunded::id(), "Enable CreateAccountPrefunded instruction"),
+        (create_prefunded_account::id(), "Enable CreatePrefundedAccount instruction"),
         /*************** ADD NEW FEATURES HERE ***************/
     ]
     .iter()
