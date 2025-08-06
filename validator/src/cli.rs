@@ -37,7 +37,7 @@ use {
         DEFAULT_MAX_UNSTAKED_CONNECTIONS, DEFAULT_QUIC_ENDPOINTS,
     },
     solana_tpu_client::tpu_client::{DEFAULT_TPU_CONNECTION_POOL_SIZE, DEFAULT_VOTE_USE_QUIC},
-    std::{path::PathBuf, str::FromStr},
+    std::{cmp::Ordering, path::PathBuf, str::FromStr},
 };
 
 pub mod thread_args;
@@ -126,6 +126,18 @@ fn deprecated_arguments() -> Vec<DeprecatedArg> {
         (@into-option $v:expr) => { Some($v) };
     }
 
+    add_arg!(
+        // deprecated in v3.0.0
+        Arg::with_name("accounts_hash_cache_path")
+            .long("accounts-hash-cache-path")
+            .value_name("PATH")
+            .takes_value(true)
+            .help(
+                "Use PATH as accounts hash cache location \
+                 [default: <LEDGER>/accounts_hash_cache]",
+            ),
+            usage_warning: "The accounts hash cache is obsolete",
+    );
     add_arg!(Arg::with_name("disable_accounts_disk_index")
         .long("disable-accounts-disk-index")
         .help("Disable the disk-based accounts index if it is enabled by default."));
@@ -635,6 +647,26 @@ pub fn test_app<'a>(version: &'a str, default_args: &'a DefaultTestArgs) -> App<
                 .takes_value(true)
                 .help(
                     "Override the number of slots in an epoch. If the ledger already exists then \
+                     this parameter is silently ignored",
+                ),
+        )
+        .arg(
+            Arg::with_name("inflation_fixed")
+                .long("inflation-fixed")
+                .value_name("RATE")
+                .validator(|value| {
+                    value
+                        .parse::<f64>()
+                        .map_err(|err| format!("error parsing '{value}': {err}"))
+                        .and_then(|rate| match rate.partial_cmp(&0.0) {
+			    Some(Ordering::Greater) | Some(Ordering::Equal) => Ok(()),
+			    Some(Ordering::Less) | None => Err(String::from("value must be >= 0")),
+                        })
+                })
+                .takes_value(true)
+                .allow_hyphen_values(true)
+                .help(
+                    "Override default inflation with fixed rate. If the ledger already exists then \
                      this parameter is silently ignored",
                 ),
         )

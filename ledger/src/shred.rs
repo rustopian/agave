@@ -55,8 +55,6 @@ pub(crate) use self::{
     merkle_tree::{PROOF_ENTRIES_FOR_32_32_BATCH, SIZE_OF_MERKLE_ROOT},
     payload::serde_bytes_payload,
 };
-#[cfg(any(test, feature = "dev-context-only-utils"))]
-use solana_perf::packet::{bytes::Bytes, BytesPacket, Meta, Packet};
 pub use {
     self::{
         payload::Payload,
@@ -71,25 +69,24 @@ use {
     assert_matches::debug_assert_matches,
     bitflags::bitflags,
     num_enum::{IntoPrimitive, TryFromPrimitive},
-    rayon::ThreadPool,
     serde::{Deserialize, Serialize},
     solana_clock::Slot,
     solana_entry::entry::{create_ticks, Entry},
     solana_hash::Hash,
-    solana_keypair::Keypair,
     solana_perf::packet::PacketRef,
     solana_pubkey::Pubkey,
     solana_sha256_hasher::hashv,
     solana_signature::{Signature, SIGNATURE_BYTES},
-    solana_signer::Signer,
     static_assertions::const_assert_eq,
-    std::{fmt::Debug, time::Instant},
+    std::fmt::Debug,
     thiserror::Error,
 };
+#[cfg(any(test, feature = "dev-context-only-utils"))]
+use {solana_keypair::Keypair, solana_perf::packet::Packet, solana_signer::Signer};
 
 mod common;
 mod legacy;
-mod merkle;
+pub(crate) mod merkle;
 mod merkle_tree;
 mod payload;
 pub mod shred_code;
@@ -111,7 +108,7 @@ pub const SIZE_OF_NONCE: usize = std::mem::size_of::<Nonce>();
 /// The following constants are computed by hand, and hardcoded.
 /// `test_shred_constants` ensures that the values are correct.
 const SIZE_OF_COMMON_SHRED_HEADER: usize = 83;
-const SIZE_OF_DATA_SHRED_HEADERS: usize = 88;
+pub const SIZE_OF_DATA_SHRED_HEADERS: usize = 88;
 const SIZE_OF_CODING_SHRED_HEADERS: usize = 89;
 const SIZE_OF_SIGNATURE: usize = SIGNATURE_BYTES;
 
@@ -202,6 +199,8 @@ pub enum Error {
     InvalidShredType,
     #[error("Invalid shred variant")]
     InvalidShredVariant,
+    #[error("Invalid packet size, could not get the shred")]
+    InvalidPacketSize,
     #[error(transparent)]
     IoError(#[from] std::io::Error),
     #[error("Unknown proof size")]
@@ -397,14 +396,11 @@ use dispatch;
 
 impl Shred {
     dispatch!(fn common_header(&self) -> &ShredCommonHeader);
+    #[cfg(any(test, feature = "dev-context-only-utils"))]
     dispatch!(fn set_signature(&mut self, signature: Signature));
     dispatch!(fn signed_data(&self) -> Result<SignedData, Error>);
 
     dispatch!(pub fn chained_merkle_root(&self) -> Result<Hash, Error>);
-    // Returns the portion of the shred's payload which is erasure coded.
-    dispatch!(pub(crate) fn erasure_shard(&self) -> Result<&[u8], Error>);
-    // Returns the shard index within the erasure coding set.
-    dispatch!(pub(crate) fn erasure_shard_index(&self) -> Result<usize, Error>);
     dispatch!(pub(crate) fn retransmitter_signature(&self) -> Result<Signature, Error>);
 
     dispatch!(pub fn into_payload(self) -> Payload);
@@ -412,27 +408,12 @@ impl Shred {
     dispatch!(pub fn payload(&self) -> &Payload);
     dispatch!(pub fn sanitize(&self) -> Result<(), Error>);
 
-    #[deprecated(since = "2.3.0")]
-    pub fn set_index(&mut self, _index: u32) {}
-    #[deprecated(since = "2.3.0")]
-    pub fn set_slot(&mut self, _slot: Slot) {}
-
     #[cfg(any(test, feature = "dev-context-only-utils"))]
     pub fn copy_to_packet(&self, packet: &mut Packet) {
         let payload = self.payload();
         let size = payload.len();
         packet.buffer_mut()[..size].copy_from_slice(&payload[..]);
         packet.meta_mut().size = size;
-    }
-
-    #[cfg(any(test, feature = "dev-context-only-utils"))]
-    pub fn to_packet(&self) -> BytesPacket {
-        let buffer: &[u8] = match self.payload() {
-            Payload::Shared(bytes) => bytes.as_ref(),
-            Payload::Unique(bytes) => bytes.as_ref(),
-        };
-        let buffer = Bytes::copy_from_slice(buffer);
-        BytesPacket::new(buffer, Meta::default())
     }
 
     // TODO: Should this sanitize output?
@@ -481,29 +462,6 @@ impl Shred {
                 Self::from(ShredData::from(shred))
             }
         })
-    }
-
-    #[deprecated(since = "2.3.0", note = "Legacy shreds are deprecated")]
-    pub fn new_from_parity_shard(
-        slot: Slot,
-        index: u32,
-        parity_shard: &[u8],
-        fec_set_index: u32,
-        num_data_shreds: u16,
-        num_coding_shreds: u16,
-        position: u16,
-        version: u16,
-    ) -> Self {
-        Self::from(ShredCode::new_from_parity_shard(
-            slot,
-            index,
-            parity_shard,
-            fec_set_index,
-            num_data_shreds,
-            num_coding_shreds,
-            position,
-            version,
-        ))
     }
 
     /// Unique identifier for each shred.
@@ -559,6 +517,7 @@ impl Shred {
         &self.common_header().signature
     }
 
+    #[cfg(feature = "dev-context-only-utils")]
     pub fn sign(&mut self, keypair: &Keypair) {
         let data = self.signed_data().unwrap();
         let signature = keypair.sign_message(data.as_ref());
@@ -584,15 +543,6 @@ impl Shred {
         match self {
             Self::ShredCode(_) => false,
             Self::ShredData(shred) => shred.last_in_slot(),
-        }
-    }
-
-    /// This is not a safe function. It only changes the meta information.
-    /// Use this only for test code which doesn't care about actual shred
-    pub fn set_last_in_slot(&mut self) {
-        match self {
-            Self::ShredCode(_) => (),
-            Self::ShredData(shred) => shred.set_last_in_slot(),
         }
     }
 
@@ -840,43 +790,6 @@ pub fn recover(
     Ok(shreds.map(|shred| shred.map(Shred::from)))
 }
 
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn make_merkle_shreds_from_entries(
-    thread_pool: &ThreadPool,
-    keypair: &Keypair,
-    entries: &[Entry],
-    slot: Slot,
-    parent_slot: Slot,
-    shred_version: u16,
-    reference_tick: u8,
-    is_last_in_slot: bool,
-    chained_merkle_root: Option<Hash>,
-    next_shred_index: u32,
-    next_code_index: u32,
-    reed_solomon_cache: &ReedSolomonCache,
-    stats: &mut ProcessShredsStats,
-) -> Result<impl Iterator<Item = Shred>, Error> {
-    let now = Instant::now();
-    let entries = bincode::serialize(entries)?;
-    stats.serialize_elapsed += now.elapsed().as_micros() as u64;
-    let shreds = merkle::make_shreds_from_data(
-        thread_pool,
-        keypair,
-        chained_merkle_root,
-        &entries[..],
-        slot,
-        parent_slot,
-        shred_version,
-        reference_tick,
-        is_last_in_slot,
-        next_shred_index,
-        next_code_index,
-        reed_solomon_cache,
-        stats,
-    )?;
-    Ok(shreds.into_iter().map(Shred::from))
-}
-
 // Accepts shreds in the slot range [root + 1, max_slot].
 #[must_use]
 pub fn should_discard_shred<'a, P>(
@@ -884,7 +797,6 @@ pub fn should_discard_shred<'a, P>(
     root: Slot,
     max_slot: Slot,
     shred_version: u16,
-    drop_unchained_merkle_shreds: impl Fn(Slot) -> bool,
     stats: &mut ShredFetchStats,
 ) -> bool
 where
@@ -962,24 +874,15 @@ where
         }
     }
     match shred_variant {
-        ShredVariant::LegacyCode | ShredVariant::LegacyData => {
+        ShredVariant::LegacyCode
+        | ShredVariant::LegacyData
+        | ShredVariant::MerkleCode { chained: false, .. }
+        | ShredVariant::MerkleData { chained: false, .. } => {
             return true;
-        }
-        ShredVariant::MerkleCode { chained: false, .. } => {
-            if drop_unchained_merkle_shreds(slot) {
-                return true;
-            }
-            stats.num_shreds_merkle_code = stats.num_shreds_merkle_code.saturating_add(1);
         }
         ShredVariant::MerkleCode { chained: true, .. } => {
             stats.num_shreds_merkle_code_chained =
                 stats.num_shreds_merkle_code_chained.saturating_add(1);
-        }
-        ShredVariant::MerkleData { chained: false, .. } => {
-            if drop_unchained_merkle_shreds(slot) {
-                return true;
-            }
-            stats.num_shreds_merkle_data = stats.num_shreds_merkle_data.saturating_add(1);
         }
         ShredVariant::MerkleData { chained: true, .. } => {
             stats.num_shreds_merkle_data_chained =
@@ -1012,6 +915,7 @@ pub fn max_entries_per_n_shred(
     (shred_data_size * num_shreds - count_size) / entry_size
 }
 
+#[cfg(feature = "dev-context-only-utils")]
 pub fn verify_test_data_shred(
     shred: &Shred,
     index: u32,
@@ -1215,11 +1119,9 @@ mod tests {
         );
     }
 
-    #[test_matrix(
-        [true, false],
-        [true, false]
-    )]
-    fn test_should_discard_shred(chained: bool, is_last_in_slot: bool) {
+    #[test_case(true ; "last_in_slot")]
+    #[test_case(false ; "not_last_in_slot")]
+    fn test_should_discard_shred(is_last_in_slot: bool) {
         solana_logger::setup();
         let mut rng = rand::thread_rng();
         let slot = 18_291;
@@ -1227,7 +1129,7 @@ mod tests {
             &mut rng,
             slot,
             1200 * 5, // data_size
-            chained,
+            true,     // chained
             is_last_in_slot,
         )
         .unwrap();
@@ -1253,7 +1155,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
         }
@@ -1266,7 +1167,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.index_overrun, 1);
@@ -1277,7 +1177,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.index_overrun, 2);
@@ -1288,7 +1187,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.index_overrun, 3);
@@ -1299,7 +1197,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.index_overrun, 4);
@@ -1310,7 +1207,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.index_overrun, 5);
@@ -1322,7 +1218,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version.wrapping_add(1),
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.shred_version_mismatch, 1);
@@ -1334,7 +1229,6 @@ mod tests {
                 parent_slot + 1, // root
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.slot_out_of_range, 1);
@@ -1356,7 +1250,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.slot_out_of_range, 1);
@@ -1378,7 +1271,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.bad_parent_offset, 1);
@@ -1399,7 +1291,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.index_out_of_bounds, 1);
@@ -1416,7 +1307,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
         }
@@ -1427,7 +1317,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version.wrapping_add(1),
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.shred_version_mismatch, 1);
@@ -1439,7 +1328,6 @@ mod tests {
                 slot, // root
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.slot_out_of_range, 1);
@@ -1460,7 +1348,6 @@ mod tests {
                 root,
                 max_slot,
                 shred_version,
-                |_| false, // drop_unchained_merkle_shreds
                 &mut stats
             ));
             assert_eq!(stats.index_out_of_bounds, 1);
@@ -1759,57 +1646,6 @@ mod tests {
         assert_eq!(shred.bytes_to_store(), payload);
         assert_eq!(shred, Shred::new_from_serialized_shred(payload).unwrap());
         verify_shred_layout(&shred, &packet);
-    }
-
-    #[test]
-    fn test_shred_flags() {
-        fn make_shred(is_last_data: bool, is_last_in_slot: bool, reference_tick: u8) -> Shred {
-            let flags = if is_last_in_slot {
-                assert!(is_last_data);
-                ShredFlags::LAST_SHRED_IN_SLOT
-            } else if is_last_data {
-                ShredFlags::DATA_COMPLETE_SHRED
-            } else {
-                ShredFlags::empty()
-            };
-            Shred::new_from_data(
-                0,   // slot
-                0,   // index
-                0,   // parent_offset
-                &[], // data
-                flags,
-                reference_tick,
-                0, // version
-                0, // fec_set_index
-            )
-        }
-        fn check_shred_flags(
-            shred: &Shred,
-            is_last_data: bool,
-            is_last_in_slot: bool,
-            reference_tick: u8,
-        ) {
-            assert_eq!(shred.data_complete(), is_last_data);
-            assert_eq!(shred.last_in_slot(), is_last_in_slot);
-            assert_eq!(shred.reference_tick(), reference_tick.min(63u8));
-            assert_eq!(
-                layout::get_reference_tick(shred.payload()).unwrap(),
-                reference_tick.min(63u8),
-            );
-        }
-        for is_last_data in [false, true] {
-            for is_last_in_slot in [false, true] {
-                // LAST_SHRED_IN_SLOT also implies DATA_COMPLETE_SHRED. So it
-                // cannot be LAST_SHRED_IN_SLOT if not DATA_COMPLETE_SHRED.
-                let is_last_in_slot = is_last_in_slot && is_last_data;
-                for reference_tick in [0, 37, 63, 64, 80, 128, 255] {
-                    let mut shred = make_shred(is_last_data, is_last_in_slot, reference_tick);
-                    check_shred_flags(&shred, is_last_data, is_last_in_slot, reference_tick);
-                    shred.set_last_in_slot();
-                    check_shred_flags(&shred, true, true, reference_tick);
-                }
-            }
-        }
     }
 
     #[test]

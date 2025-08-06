@@ -201,10 +201,10 @@ pub fn discover(
     );
 
     let id = spy_ref.id();
-    info!("Entrypoint: {:?}", entrypoint);
-    info!("Node Id: {:?}", id);
+    info!("Entrypoint: {entrypoint:?}");
+    info!("Node Id: {id:?}");
     if let Some(my_gossip_addr) = my_gossip_addr {
-        info!("Gossip Address: {:?}", my_gossip_addr);
+        info!("Gossip Address: {my_gossip_addr:?}");
     }
 
     let _ip_echo_server = ip_echo.map(|tcp_listener| {
@@ -390,10 +390,7 @@ pub fn make_gossip_node(
 mod tests {
     use {
         super::*,
-        crate::{
-            cluster_info::{ClusterInfo, Node},
-            contact_info::ContactInfo,
-        },
+        crate::{cluster_info::ClusterInfo, contact_info::ContactInfo, node::Node},
         std::sync::{atomic::AtomicBool, Arc},
     };
 

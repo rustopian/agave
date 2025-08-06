@@ -26,7 +26,7 @@ use {
     },
     solana_native_token::lamports_to_sol,
     solana_pubkey::Pubkey,
-    solana_runtime::bank::{Bank, TotalAccountsStats},
+    solana_runtime::bank::Bank,
     solana_transaction::versioned::VersionedTransaction,
     solana_transaction_status::{
         BlockEncodingOptions, ConfirmedBlock, Encodable, EncodedConfirmedBlock,
@@ -127,7 +127,8 @@ impl Display for SlotBankHash {
 fn writeln_entry(f: &mut dyn fmt::Write, i: usize, entry: &CliEntry, prefix: &str) -> fmt::Result {
     writeln!(
         f,
-        "{prefix}Entry {} - num_hashes: {}, hash: {}, transactions: {}, starting_transaction_index: {}",
+        "{prefix}Entry {} - num_hashes: {}, hash: {}, transactions: {}, \
+         starting_transaction_index: {}",
         i, entry.num_hashes, entry.hash, entry.num_transactions, entry.starting_transaction_index,
     )
 }
@@ -320,7 +321,7 @@ impl VerboseDisplay for CliDuplicateSlotProof {
         write!(w, "    Shred2 ")?;
         VerboseDisplay::write_str(&self.shred2, w)?;
         if let Some(erasure_consistency) = self.erasure_consistency {
-            writeln!(w, "    Erasure consistency {}", erasure_consistency)?;
+            writeln!(w, "    Erasure consistency {erasure_consistency}")?;
         }
         Ok(())
     }
@@ -331,7 +332,7 @@ impl fmt::Display for CliDuplicateSlotProof {
         write!(f, "    Shred1 {}", self.shred1)?;
         write!(f, "    Shred2 {}", self.shred2)?;
         if let Some(erasure_consistency) = self.erasure_consistency {
-            writeln!(f, "    Erasure consistency {}", erasure_consistency)?;
+            writeln!(f, "    Erasure consistency {erasure_consistency}")?;
         }
         Ok(())
     }
@@ -371,8 +372,8 @@ impl CliDuplicateShred {
     fn write_common(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
         writeln!(
             w,
-            "fec_set_index {}, index {}, shred_type {:?}\n       \
-             version {}, merkle_root {:?}, chained_merkle_root {:?}, last_in_slot {}",
+            "fec_set_index {}, index {}, shred_type {:?}\n       version {}, merkle_root {:?}, \
+             chained_merkle_root {:?}, last_in_slot {}",
             self.fec_set_index,
             self.index,
             self.shred_type,
@@ -440,8 +441,7 @@ impl EncodedConfirmedBlockWithEntries {
                 .transactions
                 .get(entry.starting_transaction_index..ending_transaction_index)
                 .ok_or(LedgerToolError::Generic(format!(
-                    "Mismatched entry data and transactions: entry {:?}",
-                    i
+                    "Mismatched entry data and transactions: entry {i:?}"
                 )))?;
             entries.push(CliPopulatedEntry {
                 num_hashes: entry.num_hashes,
@@ -631,8 +631,8 @@ pub fn output_slot(
             // Given that Blockstore::get_complete_block_with_entries() returned Ok(_), we know
             // that we have a full block so meta.consumed is the number of shreds in the block
             println!(
-                "  num_shreds: {}, parent_slot: {:?}, next_slots: {:?}, num_entries: {}, \
-                 is_full: {}",
+                "  num_shreds: {}, parent_slot: {:?}, next_slots: {:?}, num_entries: {}, is_full: \
+                 {}",
                 meta.consumed,
                 meta.parent_slot,
                 meta.next_slots,
@@ -820,6 +820,33 @@ impl AccountsOutputStreamer {
     }
 }
 
+/// Struct to collect stats when scanning all accounts for AccountsOutputStreamer
+#[derive(Debug, Default, Copy, Clone, Serialize)]
+pub struct TotalAccountsStats {
+    /// Total number of accounts
+    pub num_accounts: usize,
+    /// Total data size of all accounts
+    pub data_len: usize,
+
+    /// Total number of executable accounts
+    pub num_executable_accounts: usize,
+    /// Total data size of executable accounts
+    pub executable_data_len: usize,
+}
+
+impl TotalAccountsStats {
+    pub fn accumulate_account(&mut self, account: &AccountSharedData) {
+        let data_len = account.data().len();
+        self.num_accounts += 1;
+        self.data_len += data_len;
+
+        if account.executable() {
+            self.num_executable_accounts += 1;
+            self.executable_data_len += data_len;
+        }
+    }
+}
+
 struct AccountsScanner {
     bank: Arc<Bank>,
     total_accounts_stats: Rc<RefCell<TotalAccountsStats>>,
@@ -867,13 +894,11 @@ impl AccountsScanner {
         S: SerializeSeq,
     {
         let mut total_accounts_stats = self.total_accounts_stats.borrow_mut();
-        let rent_collector = self.bank.rent_collector();
-
         let scan_func = |account_tuple: Option<(&Pubkey, AccountSharedData, Slot)>| {
             if let Some((pubkey, account, _slot)) =
                 account_tuple.filter(|(_, account, _)| self.should_process_account(account))
             {
-                total_accounts_stats.accumulate_account(pubkey, &account, rent_collector);
+                total_accounts_stats.accumulate_account(&account);
                 self.maybe_output_account(seq_serializer, pubkey, &account);
             }
         };
@@ -888,7 +913,7 @@ impl AccountsScanner {
                     .get_account_modified_slot_with_fixed_root(pubkey)
                     .filter(|(account, _)| self.should_process_account(account))
                 {
-                    total_accounts_stats.accumulate_account(pubkey, &account, rent_collector);
+                    total_accounts_stats.accumulate_account(&account);
                     self.maybe_output_account(seq_serializer, pubkey, &account);
                 }
             }),
@@ -899,7 +924,7 @@ impl AccountsScanner {
                 .iter()
                 .filter(|(_, account)| self.should_process_account(account))
                 .for_each(|(pubkey, account)| {
-                    total_accounts_stats.accumulate_account(pubkey, account, rent_collector);
+                    total_accounts_stats.accumulate_account(account);
                     self.maybe_output_account(seq_serializer, pubkey, account);
                 }),
         }

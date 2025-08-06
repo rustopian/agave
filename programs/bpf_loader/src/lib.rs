@@ -1,8 +1,6 @@
 #![deny(clippy::arithmetic_side_effects)]
 #![deny(clippy::indexing_slicing)]
 
-pub mod syscalls;
-
 #[cfg(feature = "svm-internal")]
 use qualifier_attr::qualifiers;
 use {
@@ -30,7 +28,7 @@ use {
     solana_sbpf::{
         declare_builtin_function,
         ebpf::{self, MM_HEAP_START},
-        elf::Executable,
+        elf::{ElfError, Executable},
         error::{EbpfError, ProgramResult},
         memory_region::{AccessType, MemoryMapping, MemoryRegion},
         program::BuiltinProgram,
@@ -44,7 +42,6 @@ use {
     solana_transaction_context::{IndexOfAccount, InstructionContext, TransactionContext},
     solana_type_overrides::sync::{atomic::Ordering, Arc},
     std::{cell::RefCell, mem, rc::Rc},
-    syscalls::morph_into_deployment_environment_v1,
 };
 
 #[cfg_attr(feature = "svm-internal", qualifiers(pub))]
@@ -56,6 +53,28 @@ const UPGRADEABLE_LOADER_COMPUTE_UNITS: u64 = 2_370;
 
 thread_local! {
     pub static MEMORY_POOL: RefCell<VmMemoryPool> = RefCell::new(VmMemoryPool::new());
+}
+
+fn morph_into_deployment_environment_v1(
+    from: Arc<BuiltinProgram<InvokeContext>>,
+) -> Result<BuiltinProgram<InvokeContext>, ElfError> {
+    let mut config = from.get_config().clone();
+    config.reject_broken_elfs = true;
+    // Once the tests are being build using a toolchain which supports the newer SBPF versions,
+    // the deployment of older versions will be disabled:
+    // config.enabled_sbpf_versions =
+    //     *config.enabled_sbpf_versions.end()..=*config.enabled_sbpf_versions.end();
+
+    let mut result = BuiltinProgram::new_loader(config);
+
+    for (_key, (name, value)) in from.get_function_registry().iter() {
+        // Deployment of programs with sol_alloc_free is disabled. So do not register the syscall.
+        if name != *b"sol_alloc_free_" {
+            result.register_function(unsafe { std::str::from_utf8_unchecked(name) }, value)?;
+        }
+    }
+
+    Ok(result)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -250,6 +269,10 @@ fn create_vm<'a, 'b>(
         heap,
         regions,
         invoke_context.transaction_context,
+        invoke_context
+            .get_feature_set()
+            .stricter_abi_and_runtime_constraints,
+        invoke_context.account_data_direct_mapping,
     )?;
     invoke_context.set_syscall_context(SyscallContext {
         allocator: BpfAllocator::new(heap_size as u64),
@@ -297,38 +320,14 @@ macro_rules! create_vm {
     };
 }
 
-#[macro_export]
-macro_rules! mock_create_vm {
-    ($vm:ident, $additional_regions:expr, $accounts_metadata:expr, $invoke_context:expr $(,)?) => {
-        let loader = solana_type_overrides::sync::Arc::new(BuiltinProgram::new_mock());
-        let function_registry = solana_sbpf::program::FunctionRegistry::default();
-        let executable = solana_sbpf::elf::Executable::<InvokeContext>::from_text_bytes(
-            &[0x9D, 0, 0, 0, 0, 0, 0, 0],
-            loader,
-            SBPFVersion::V3,
-            function_registry,
-        )
-        .unwrap();
-        executable
-            .verify::<solana_sbpf::verifier::RequisiteVerifier>()
-            .unwrap();
-        $crate::create_vm!(
-            $vm,
-            &executable,
-            $additional_regions,
-            $accounts_metadata,
-            $invoke_context,
-        );
-        let $vm = $vm.map(|(vm, _, _)| vm);
-    };
-}
-
 fn create_memory_mapping<'a, 'b, C: ContextObject>(
     executable: &'a Executable<C>,
     stack: &'b mut [u8],
     heap: &'b mut [u8],
     additional_regions: Vec<MemoryRegion>,
     transaction_context: &TransactionContext,
+    stricter_abi_and_runtime_constraints: bool,
+    account_data_direct_mapping: bool,
 ) -> Result<MemoryMapping<'a>, Box<dyn std::error::Error>> {
     let config = executable.get_config();
     let sbpf_version = executable.get_sbpf_version();
@@ -349,11 +348,14 @@ fn create_memory_mapping<'a, 'b, C: ContextObject>(
     .chain(additional_regions)
     .collect();
 
-    Ok(MemoryMapping::new_with_cow(
+    Ok(MemoryMapping::new_with_access_violation_handler(
         regions,
         config,
         sbpf_version,
-        transaction_context.account_data_write_access_handler(),
+        transaction_context.access_violation_handler(
+            stricter_abi_and_runtime_constraints,
+            account_data_direct_mapping,
+        ),
     )?)
 }
 
@@ -659,7 +661,7 @@ fn process_loader_upgradeable_instruction(
                 .iter()
                 .map(|seeds| Pubkey::create_program_address(seeds, caller_program_id))
                 .collect::<Result<Vec<Pubkey>, solana_pubkey::PubkeyError>>()?;
-            invoke_context.native_invoke(instruction.into(), signers.as_slice())?;
+            invoke_context.native_invoke(instruction, signers.as_slice())?;
 
             // Load and verify the program bits
             let transaction_context = &invoke_context.transaction_context;
@@ -1291,8 +1293,7 @@ fn process_loader_upgradeable_instruction(
                         &provided_authority_address,
                         program_len as u32,
                         &program_address,
-                    )
-                    .into(),
+                    ),
                     &[],
                 )?;
 
@@ -1304,8 +1305,7 @@ fn process_loader_upgradeable_instruction(
                         0,
                         0,
                         program_len as u32,
-                    )
-                    .into(),
+                    ),
                     &[],
                 )?;
 
@@ -1313,8 +1313,7 @@ fn process_loader_upgradeable_instruction(
                     solana_loader_v4_interface::instruction::deploy(
                         &program_address,
                         &provided_authority_address,
-                    )
-                    .into(),
+                    ),
                     &[],
                 )?;
 
@@ -1324,8 +1323,7 @@ fn process_loader_upgradeable_instruction(
                             &program_address,
                             &provided_authority_address,
                             &program_address,
-                        )
-                        .into(),
+                        ),
                         &[],
                     )?;
                 } else if migration_authority::check_id(&provided_authority_address) {
@@ -1334,8 +1332,7 @@ fn process_loader_upgradeable_instruction(
                             &program_address,
                             &provided_authority_address,
                             &upgrade_authority_address.unwrap(),
-                        )
-                        .into(),
+                        ),
                         &[],
                     )?;
                 }
@@ -1496,7 +1493,7 @@ fn common_extend_program(
         )?;
 
         invoke_context.native_invoke(
-            system_instruction::transfer(&payer_key, &programdata_key, required_payment).into(),
+            system_instruction::transfer(&payer_key, &programdata_key, required_payment),
             &[],
         )?;
     }
@@ -1599,9 +1596,9 @@ fn execute<'a, 'b: 'a>(
     let use_jit = false;
     #[cfg(all(not(target_os = "windows"), target_arch = "x86_64"))]
     let use_jit = executable.get_compiled_program().is_some();
-    let direct_mapping = invoke_context
+    let stricter_abi_and_runtime_constraints = invoke_context
         .get_feature_set()
-        .bpf_account_data_direct_mapping;
+        .stricter_abi_and_runtime_constraints;
     let mask_out_rent_epoch_in_vm_serialization = invoke_context
         .get_feature_set()
         .mask_out_rent_epoch_in_vm_serialization;
@@ -1610,7 +1607,8 @@ fn execute<'a, 'b: 'a>(
     let (parameter_bytes, regions, accounts_metadata) = serialization::serialize_parameters(
         invoke_context.transaction_context,
         instruction_context,
-        !direct_mapping,
+        stricter_abi_and_runtime_constraints,
+        invoke_context.account_data_direct_mapping,
         mask_out_rent_epoch_in_vm_serialization,
     )?;
     serialize_time.stop();
@@ -1691,45 +1689,68 @@ fn execute<'a, 'b: 'a>(
                     invoke_context.consume(invoke_context.get_remaining());
                 }
 
-                if direct_mapping {
-                    if let EbpfError::AccessViolation(
-                        AccessType::Store,
-                        address,
-                        _size,
-                        _section_name,
-                    ) = error
+                if stricter_abi_and_runtime_constraints {
+                    if let EbpfError::SyscallError(err) = error {
+                        error = err
+                            .downcast::<EbpfError>()
+                            .map(|err| *err)
+                            .unwrap_or_else(EbpfError::SyscallError);
+                    }
+                    if let EbpfError::AccessViolation(access_type, vm_addr, len, _section_name) =
+                        error
                     {
-                        // If direct_mapping is enabled and a program tries to write to a readonly
+                        // If stricter_abi_and_runtime_constraints is enabled and a program tries to write to a readonly
                         // region we'll get a memory access violation. Map it to a more specific
                         // error so it's easier for developers to see what happened.
-                        if let Some((instruction_account_index, _)) = account_region_addrs
-                            .iter()
-                            .enumerate()
-                            .find(|(_, vm_region)| vm_region.contains(&address))
+                        if let Some((instruction_account_index, vm_addr_range)) =
+                            account_region_addrs
+                                .iter()
+                                .enumerate()
+                                .find(|(_, vm_addr_range)| vm_addr_range.contains(&vm_addr))
                         {
                             let transaction_context = &invoke_context.transaction_context;
                             let instruction_context =
                                 transaction_context.get_current_instruction_context()?;
-
                             let account = instruction_context.try_borrow_instruction_account(
                                 transaction_context,
                                 instruction_account_index as IndexOfAccount,
                             )?;
-
-                            error = EbpfError::SyscallError(Box::new(
-                                #[allow(deprecated)]
-                                if !invoke_context
-                                    .get_feature_set()
-                                    .remove_accounts_executable_flag_checks
-                                    && account.is_executable()
-                                {
-                                    InstructionError::ExecutableDataModified
-                                } else if account.is_writable() {
-                                    InstructionError::ExternalAccountDataModified
-                                } else {
-                                    InstructionError::ReadonlyDataModified
-                                },
-                            ));
+                            if vm_addr.saturating_add(len) <= vm_addr_range.end {
+                                // The access was within the range of the accounts address space,
+                                // but it might not be within the range of the actual data.
+                                let is_access_outside_of_data = vm_addr
+                                    .saturating_add(len)
+                                    .saturating_sub(vm_addr_range.start)
+                                    as usize
+                                    > account.get_data().len();
+                                error = EbpfError::SyscallError(Box::new(
+                                    #[allow(deprecated)]
+                                    match access_type {
+                                        AccessType::Store => {
+                                            if let Err(err) = account.can_data_be_changed() {
+                                                err
+                                            } else {
+                                                // The store was allowed but failed,
+                                                // thus it must have been an attempt to grow the account.
+                                                debug_assert!(is_access_outside_of_data);
+                                                InstructionError::InvalidRealloc
+                                            }
+                                        }
+                                        AccessType::Load => {
+                                            // Loads should only fail when they are outside of the account data.
+                                            debug_assert!(is_access_outside_of_data);
+                                            if account.can_data_be_changed().is_err() {
+                                                // Load beyond readonly account data happened because the program
+                                                // expected more data than there actually is.
+                                                InstructionError::AccountDataTooSmall
+                                            } else {
+                                                // Load beyond writable account data also attempted to grow.
+                                                InstructionError::InvalidRealloc
+                                            }
+                                        }
+                                    },
+                                ));
+                            }
                         }
                     }
                 }
@@ -1746,14 +1767,15 @@ fn execute<'a, 'b: 'a>(
     fn deserialize_parameters(
         invoke_context: &mut InvokeContext,
         parameter_bytes: &[u8],
-        copy_account_data: bool,
+        stricter_abi_and_runtime_constraints: bool,
     ) -> Result<(), InstructionError> {
         serialization::deserialize_parameters(
             invoke_context.transaction_context,
             invoke_context
                 .transaction_context
                 .get_current_instruction_context()?,
-            copy_account_data,
+            stricter_abi_and_runtime_constraints,
+            invoke_context.account_data_direct_mapping,
             parameter_bytes,
             &invoke_context.get_syscall_context()?.accounts_metadata,
         )
@@ -1761,8 +1783,12 @@ fn execute<'a, 'b: 'a>(
 
     let mut deserialize_time = Measure::start("deserialize");
     let execute_or_deserialize_result = execution_result.and_then(|_| {
-        deserialize_parameters(invoke_context, parameter_bytes.as_slice(), !direct_mapping)
-            .map_err(|error| Box::new(error) as Box<dyn std::error::Error>)
+        deserialize_parameters(
+            invoke_context,
+            parameter_bytes.as_slice(),
+            stricter_abi_and_runtime_constraints,
+        )
+        .map_err(|error| Box::new(error) as Box<dyn std::error::Error>)
     });
     deserialize_time.stop();
 
@@ -1778,7 +1804,7 @@ fn execute<'a, 'b: 'a>(
 mod test_utils {
     #[cfg(feature = "svm-internal")]
     use {
-        super::*, crate::syscalls::create_program_runtime_environment_v1,
+        super::*, agave_syscalls::create_program_runtime_environment_v1,
         solana_account::ReadableAccount, solana_loader_v4_interface::state::LoaderV4State,
         solana_program_runtime::loaded_programs::DELAY_VISIBILITY_SLOT_OFFSET,
         solana_sdk_ids::loader_v4,

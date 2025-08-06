@@ -652,6 +652,14 @@ fn process_instruction<'a>(
         TEST_NESTED_INVOKE_TOO_DEEP => {
             let _ = do_nested_invokes(5, accounts);
         }
+        TEST_NESTED_INVOKE_SIMD_0296_OK => {
+            // Test that 8 nested invokes succeed with SIMD-0296 enabled
+            let _ = do_nested_invokes(8, accounts);
+        }
+        TEST_NESTED_INVOKE_SIMD_0296_TOO_DEEP => {
+            // Test that 9 nested invokes fail even with SIMD-0296 enabled
+            let _ = do_nested_invokes(9, accounts);
+        }
         TEST_CALL_PRECOMPILE => {
             msg!("Test calling precompiled program from cpi");
             let instruction =
@@ -869,7 +877,7 @@ fn process_instruction<'a>(
                         // TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE_MOVING_DATA_POINTER
                         // is that we don't move the data pointer past the
                         // RcBox. This is needed to avoid the "Invalid account
-                        // info pointer" check when direct mapping is enabled.
+                        // info pointer" check when stricter_abi_and_runtime_constraints is enabled.
                         // This also means we don't need to update the
                         // serialized len like we do in the other test.
                         value: RefCell::new(slice::from_raw_parts_mut(
@@ -1024,7 +1032,8 @@ fn process_instruction<'a>(
             let realloc_program_id = accounts[REALLOC_PROGRAM_INDEX].key;
             let realloc_program_owner = accounts[REALLOC_PROGRAM_INDEX].owner;
             let invoke_program_id = accounts[INVOKE_PROGRAM_INDEX].key;
-            let new_len = usize::from_le_bytes(instruction_data[1..9].try_into().unwrap());
+            let stricter_abi_and_runtime_constraints = instruction_data[1];
+            let new_len = usize::from_le_bytes(instruction_data[2..10].try_into().unwrap());
             let prev_len = account.data_len();
             let expected = account.data.borrow()[..new_len].to_vec();
             let mut instruction_data = vec![REALLOC, 0];
@@ -1045,7 +1054,9 @@ fn process_instruction<'a>(
 
             // deserialize_parameters_unaligned predates realloc support, and
             // hardcodes the account data length to the original length.
-            if !bpf_loader_deprecated::check_id(realloc_program_owner) {
+            if !bpf_loader_deprecated::check_id(realloc_program_owner)
+                && stricter_abi_and_runtime_constraints == 0
+            {
                 assert_eq!(&*account.data.borrow(), &expected);
                 assert_eq!(
                     unsafe {
@@ -1066,7 +1077,7 @@ fn process_instruction<'a>(
             let invoke_program_id = accounts[INVOKE_PROGRAM_INDEX].key;
 
             let prev_data = {
-                let data = &instruction_data[9..];
+                let data = &instruction_data[10..];
                 let prev_len = account.data_len();
                 account.resize(prev_len + data.len())?;
                 account.data.borrow_mut()[prev_len..].copy_from_slice(data);
@@ -1084,8 +1095,9 @@ fn process_instruction<'a>(
             };
 
             let mut expected = account.data.borrow().to_vec();
-            let new_len = usize::from_le_bytes(instruction_data[1..9].try_into().unwrap());
-            expected.extend_from_slice(&instruction_data[9..]);
+            let stricter_abi_and_runtime_constraints = instruction_data[1];
+            let new_len = usize::from_le_bytes(instruction_data[2..10].try_into().unwrap());
+            expected.extend_from_slice(&instruction_data[10..]);
             let mut instruction_data =
                 vec![TEST_CPI_ACCOUNT_UPDATE_CALLER_GROWS_CALLEE_SHRINKS_NESTED];
             instruction_data.extend_from_slice(&new_len.to_le_bytes());
@@ -1103,19 +1115,21 @@ fn process_instruction<'a>(
             .unwrap();
 
             assert_eq!(*account.data.borrow(), &prev_data[..new_len]);
-            assert_eq!(
-                unsafe {
-                    slice::from_raw_parts(
-                        account.data.borrow().as_ptr().add(new_len),
-                        prev_data.len() - new_len,
-                    )
-                },
-                &vec![0; prev_data.len() - new_len]
-            );
-            assert_eq!(
-                unsafe { *account.data.borrow().as_ptr().add(prev_data.len()) },
-                SENTINEL
-            );
+            if stricter_abi_and_runtime_constraints == 0 {
+                assert_eq!(
+                    unsafe {
+                        slice::from_raw_parts(
+                            account.data.borrow().as_ptr().add(new_len),
+                            prev_data.len() - new_len,
+                        )
+                    },
+                    &vec![0; prev_data.len() - new_len]
+                );
+                assert_eq!(
+                    unsafe { *account.data.borrow().as_ptr().add(prev_data.len()) },
+                    SENTINEL
+                );
+            }
         }
         TEST_CPI_ACCOUNT_UPDATE_CALLER_GROWS_CALLEE_SHRINKS_NESTED => {
             msg!("TEST_CPI_ACCOUNT_UPDATE_CALLER_GROWS_CALLEE_SHRINKS_NESTED");
@@ -1227,124 +1241,15 @@ fn process_instruction<'a>(
             )
             .unwrap();
         }
-        TEST_CPI_CHANGE_ACCOUNT_DATA_MEMORY_ALLOCATION => {
-            msg!("TEST_CPI_CHANGE_ACCOUNT_DATA_MEMORY_ALLOCATION");
-            const CALLEE_PROGRAM_INDEX: usize = 2;
-            let account = &accounts[ARGUMENT_INDEX];
-            let callee_program_id = accounts[CALLEE_PROGRAM_INDEX].key;
-            let original_data_len = account.data_len();
-
-            // Initial data is all [0xFF; 20]
-            assert_eq!(&*account.data.borrow(), &[0xFF; 20]);
-
-            // Realloc to [0xFE; 10]
-            invoke(
-                &create_instruction(
-                    *callee_program_id,
-                    &[
-                        (account.key, true, false),
-                        (callee_program_id, false, false),
-                    ],
-                    vec![0xFE; 10],
-                ),
-                accounts,
-            )
-            .unwrap();
-
-            // Check that [10..20] is zeroed
-            let new_len = account.data_len();
-            assert_eq!(&*account.data.borrow(), &[0xFE; 10]);
-            assert_eq!(
-                unsafe {
-                    slice::from_raw_parts(
-                        account.data.borrow().as_ptr().add(new_len),
-                        original_data_len - new_len,
-                    )
-                },
-                &vec![0; original_data_len - new_len]
-            );
-
-            // Realloc to [0xFD; 5]
-            invoke(
-                &create_instruction(
-                    *callee_program_id,
-                    &[
-                        (accounts[ARGUMENT_INDEX].key, true, false),
-                        (callee_program_id, false, false),
-                    ],
-                    vec![0xFD; 5],
-                ),
-                accounts,
-            )
-            .unwrap();
-
-            // Check that [5..20] is zeroed
-            let new_len = account.data_len();
-            assert_eq!(&*account.data.borrow(), &[0xFD; 5]);
-            assert_eq!(
-                unsafe {
-                    slice::from_raw_parts(
-                        account.data.borrow().as_ptr().add(new_len),
-                        original_data_len - new_len,
-                    )
-                },
-                &vec![0; original_data_len - new_len]
-            );
-
-            // Realloc to [0xFC; 2]
-            invoke(
-                &create_instruction(
-                    *callee_program_id,
-                    &[
-                        (accounts[ARGUMENT_INDEX].key, true, false),
-                        (callee_program_id, false, false),
-                    ],
-                    vec![0xFC; 2],
-                ),
-                accounts,
-            )
-            .unwrap();
-
-            // Check that [2..20] is zeroed
-            let new_len = account.data_len();
-            assert_eq!(&*account.data.borrow(), &[0xFC; 2]);
-            assert_eq!(
-                unsafe {
-                    slice::from_raw_parts(
-                        account.data.borrow().as_ptr().add(new_len),
-                        original_data_len - new_len,
-                    )
-                },
-                &vec![0; original_data_len - new_len]
-            );
-
-            // Realloc to [0xFC; 2]. Here we keep the same length, but realloc the underlying
-            // vector. CPI must zero even if the length is unchanged.
-            invoke(
-                &create_instruction(
-                    *callee_program_id,
-                    &[
-                        (accounts[ARGUMENT_INDEX].key, true, false),
-                        (callee_program_id, false, false),
-                    ],
-                    vec![0xFC; 2],
-                ),
-                accounts,
-            )
-            .unwrap();
-
-            // Check that [2..20] is zeroed
-            let new_len = account.data_len();
-            assert_eq!(&*account.data.borrow(), &[0xFC; 2]);
-            assert_eq!(
-                unsafe {
-                    slice::from_raw_parts(
-                        account.data.borrow().as_ptr().add(new_len),
-                        original_data_len - new_len,
-                    )
-                },
-                &vec![0; original_data_len - new_len]
-            );
+        TEST_READ_ACCOUNT => {
+            msg!("TEST_READ_ACCOUNT");
+            let account_index = instruction_data[1] as usize;
+            let account = &accounts[account_index];
+            let byte_index = usize::from_le_bytes(instruction_data[2..10].try_into().unwrap());
+            let data = unsafe {
+                *(account.data.borrow().get_unchecked(byte_index) as *const u8).cast::<u64>()
+            };
+            assert_eq!(data, 0);
         }
         TEST_WRITE_ACCOUNT => {
             msg!("TEST_WRITE_ACCOUNT");
@@ -1399,7 +1304,7 @@ fn process_instruction<'a>(
             }
 
             if !invoke_struction.is_empty() {
-                // Invoke another program. With direct mapping, before CPI the callee will update the accounts (incl resizing)
+                // Invoke another program. With stricter_abi_and_runtime_constraints, before CPI the callee will update the accounts (incl resizing)
                 // so the pointer may change.
                 let invoked_program_id = accounts[INVOKED_PROGRAM_INDEX].key;
 
@@ -1453,7 +1358,7 @@ fn process_instruction<'a>(
             let stack = unsafe {
                 slice::from_raw_parts_mut(
                     MM_STACK_START as *mut u8,
-                    MAX_CALL_DEPTH * STACK_FRAME_SIZE,
+                    MAX_CALL_DEPTH * STACK_FRAME_SIZE * 2,
                 )
             };
 
@@ -1466,7 +1371,7 @@ fn process_instruction<'a>(
             // When we don't have dynamic stack frames, the stack grows from lower addresses
             // to higher addresses, so we compare accordingly.
             for i in 10..MAX_CALL_DEPTH {
-                let stack = &mut stack[i * STACK_FRAME_SIZE..][..STACK_FRAME_SIZE];
+                let stack = &mut stack[i * STACK_FRAME_SIZE * 2..][..STACK_FRAME_SIZE];
                 assert!(stack == &ZEROS[..STACK_FRAME_SIZE], "stack not zeroed");
                 stack.fill(42);
             }

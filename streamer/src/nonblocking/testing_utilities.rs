@@ -11,12 +11,9 @@ use {
         TokioRuntime, TransportConfig,
     },
     solana_keypair::Keypair,
-    solana_net_utils::{
-        bind_to_localhost,
-        sockets::{
-            localhost_port_range_for_tests, multi_bind_in_range_with_config,
-            SocketConfiguration as SocketConfig,
-        },
+    solana_net_utils::sockets::{
+        bind_to_localhost_unique, localhost_port_range_for_tests, multi_bind_in_range_with_config,
+        SocketConfiguration as SocketConfig,
     },
     solana_perf::packet::PacketBatch,
     solana_quic_definitions::{QUIC_KEEP_ALIVE, QUIC_MAX_TIMEOUT, QUIC_SEND_FAIRNESS},
@@ -123,7 +120,7 @@ pub async fn make_client_endpoint(
     addr: &SocketAddr,
     client_keypair: Option<&Keypair>,
 ) -> Connection {
-    let client_socket = bind_to_localhost().unwrap();
+    let client_socket = bind_to_localhost_unique().expect("should bind - client");
     let mut endpoint = quinn::Endpoint::new(
         EndpointConfig::default(),
         None,
@@ -151,7 +148,7 @@ pub async fn check_multiple_streams(
     let conn2 = Arc::new(make_client_endpoint(&server_address, client_keypair).await);
     let mut num_expected_packets = 0;
     for i in 0..10 {
-        info!("sending: {}", i);
+        info!("sending: {i}");
         let c1 = conn1.clone();
         let c2 = conn2.clone();
         let mut s1 = c1.open_uni().await.unwrap();
