@@ -1124,6 +1124,7 @@ pub mod raise_account_cu_limit {
 
 pub mod raise_cpi_nesting_limit_to_8 {
     solana_pubkey::declare_id!("6TkHkRmP7JZy1fdM6fg5uXn76wChQBWGokHBJzrLB3mj");
+}
 
 pub mod create_prefunded_account {
     solana_pubkey::declare_id!("CbwrtjKe4bGf4tyMU2AnRyzHL7Du93jxynFdGvmoNgDw");
