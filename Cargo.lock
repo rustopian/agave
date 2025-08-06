@@ -265,7 +265,7 @@ dependencies = [
  "solana-streamer",
  "solana-svm-callback",
  "solana-svm-feature-set",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-transaction",
  "solana-transaction-context",
  "solana-transaction-status",
@@ -336,7 +336,7 @@ dependencies = [
  "solana-account",
  "solana-accounts-db",
  "solana-pubkey",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-version",
 ]
 
@@ -430,7 +430,7 @@ dependencies = [
  "solana-signature",
  "solana-signer",
  "solana-svm-transaction",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-transaction",
 ]
 
@@ -506,7 +506,7 @@ dependencies = [
  "solana-signer",
  "solana-storage-bigtable",
  "solana-streamer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-test-validator",
  "solana-time-utils",
  "solana-tpu-client",
@@ -6843,7 +6843,7 @@ dependencies = [
  "solana-signature",
  "solana-signer",
  "solana-streamer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-test-validator",
  "solana-transaction",
  "solana-transaction-status",
@@ -6925,7 +6925,7 @@ dependencies = [
  "solana-slot-history",
  "solana-stake-program",
  "solana-svm-transaction",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-sysvar",
  "solana-time-utils",
  "solana-transaction",
@@ -6997,7 +6997,7 @@ dependencies = [
  "solana-signature",
  "solana-signer",
  "solana-streamer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-transaction",
  "solana-time-utils",
  "solana-tpu-client",
@@ -7024,7 +7024,7 @@ dependencies = [
  "solana-runtime",
  "solana-signature",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-sysvar",
  "solana-transaction",
  "solana-transaction-context",
@@ -7147,7 +7147,7 @@ dependencies = [
  "solana-signature",
  "solana-signer",
  "solana-streamer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-test-validator",
  "solana-time-utils",
  "solana-tps-client",
@@ -7320,7 +7320,7 @@ dependencies = [
  "solana-pubkey",
  "solana-sdk-ids",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-transaction",
  "solana-transaction-error",
 ]
@@ -7440,7 +7440,7 @@ dependencies = [
  "solana-seed-phrase",
  "solana-signature",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "tempfile",
  "thiserror 2.0.12",
  "tiny-bip39",
@@ -7558,7 +7558,7 @@ dependencies = [
  "solana-slot-history",
  "solana-stake-interface",
  "solana-streamer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
  "solana-sysvar",
  "solana-test-validator",
  "solana-tps-client",
@@ -7626,7 +7626,7 @@ dependencies = [
  "solana-signature",
  "solana-signer",
  "solana-stake-interface",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-sysvar",
  "solana-transaction",
  "solana-transaction-context",
@@ -7710,7 +7710,7 @@ dependencies = [
  "solana-runtime",
  "solana-signer",
  "solana-streamer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-transaction",
  "solana-test-validator",
  "solana-transaction-status",
@@ -7736,7 +7736,7 @@ dependencies = [
  "solana-pubkey",
  "solana-signature",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
  "solana-transaction",
  "solana-transaction-error",
 ]
@@ -7808,7 +7808,7 @@ dependencies = [
  "solana-signer",
  "solana-stake-interface",
  "solana-svm-transaction",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-transaction",
  "solana-transaction-error",
  "thiserror 2.0.12",
@@ -7861,7 +7861,7 @@ dependencies = [
  "solana-pubkey",
  "solana-sdk-ids",
  "solana-short-vec",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
 ]
 
 [[package]]
@@ -8019,7 +8019,7 @@ dependencies = [
  "solana-streamer",
  "solana-svm",
  "solana-svm-transaction",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-program",
  "solana-system-transaction",
  "solana-sysvar",
@@ -8089,7 +8089,7 @@ dependencies = [
  "solana-signature",
  "solana-signer",
  "solana-svm-transaction",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-program",
  "solana-system-transaction",
  "solana-transaction",
@@ -8201,7 +8201,7 @@ dependencies = [
  "solana-signer",
  "solana-stake-interface",
  "solana-streamer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-time-utils",
  "solana-tps-client",
  "solana-tpu-client",
@@ -8352,7 +8352,7 @@ dependencies = [
  "solana-nonce",
  "solana-pubkey",
  "solana-sdk-ids",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
  "thiserror 2.0.12",
 ]
 
@@ -8378,7 +8378,7 @@ dependencies = [
  "solana-packet",
  "solana-pubkey",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
  "solana-system-transaction",
  "solana-transaction",
  "solana-version",
@@ -8416,7 +8416,7 @@ dependencies = [
  "solana-pubkey",
  "solana-rent",
  "solana-sdk-ids",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
 ]
 
 [[package]]
@@ -8952,7 +8952,7 @@ dependencies = [
  "solana-streamer",
  "solana-svm",
  "solana-svm-transaction",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-transaction",
  "solana-time-utils",
  "solana-timings",
@@ -9002,7 +9002,7 @@ dependencies = [
  "solana-instruction",
  "solana-pubkey",
  "solana-sdk-ids",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
 ]
 
 [[package]]
@@ -9017,7 +9017,7 @@ dependencies = [
  "solana-instruction",
  "solana-pubkey",
  "solana-sdk-ids",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
 ]
 
 [[package]]
@@ -9094,7 +9094,7 @@ dependencies = [
  "solana-stake-interface",
  "solana-stake-program",
  "solana-streamer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-transaction",
  "solana-time-utils",
  "solana-tpu-client",
@@ -9180,7 +9180,7 @@ dependencies = [
  "solana-sanitize",
  "solana-sdk-ids",
  "solana-short-vec",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
  "solana-transaction-error",
  "wasm-bindgen",
 ]
@@ -9363,7 +9363,7 @@ dependencies = [
  "solana-short-vec",
  "solana-signature",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-transaction",
  "solana-time-utils",
  "solana-transaction",
@@ -9554,7 +9554,7 @@ dependencies = [
  "solana-slot-history",
  "solana-stable-layout",
  "solana-stake-interface",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
  "solana-sysvar",
  "solana-sysvar-id",
  "solana-vote-interface",
@@ -9713,7 +9713,7 @@ dependencies = [
  "solana-stake-interface",
  "solana-stake-program",
  "solana-svm",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-sysvar",
  "solana-sysvar-id",
  "solana-timings",
@@ -9980,7 +9980,7 @@ dependencies = [
  "solana-storage-bigtable",
  "solana-streamer",
  "solana-svm",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-transaction",
  "solana-sysvar",
  "solana-time-utils",
@@ -10097,7 +10097,7 @@ dependencies = [
  "solana-sdk-ids",
  "solana-sha256-hasher",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-transaction",
  "thiserror 2.0.12",
  "tokio",
@@ -10283,7 +10283,7 @@ dependencies = [
  "solana-svm",
  "solana-svm-callback",
  "solana-svm-transaction",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-program",
  "solana-system-transaction",
  "solana-sysvar",
@@ -10334,7 +10334,7 @@ dependencies = [
  "solana-signature",
  "solana-signer",
  "solana-svm-transaction",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-transaction",
  "solana-transaction",
  "solana-transaction-error",
@@ -10479,7 +10479,7 @@ dependencies = [
  "solana-runtime",
  "solana-signature",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-transaction",
  "solana-time-utils",
  "solana-tpu-client-next",
@@ -10662,7 +10662,7 @@ dependencies = [
  "solana-instruction",
  "solana-program-error",
  "solana-pubkey",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
  "solana-sysvar-id",
 ]
 
@@ -10719,7 +10719,7 @@ dependencies = [
  "solana-pubkey",
  "solana-signer",
  "solana-stake-interface",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-sysvar",
  "solana-transaction",
  "solana-transaction-error",
@@ -10913,7 +10913,7 @@ dependencies = [
  "solana-svm-conformance",
  "solana-svm-feature-set",
  "solana-svm-transaction",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-system-program",
  "solana-system-transaction",
  "solana-sysvar",
@@ -10961,7 +10961,7 @@ dependencies = [
  "solana-pubkey",
  "solana-sdk-ids",
  "solana-signature",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-transaction",
  "static_assertions",
  "test-case",
@@ -10970,8 +10970,7 @@ dependencies = [
 [[package]]
 name = "solana-system-interface"
 version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94d7c18cb1a91c6be5f5a8ac9276a1d7c737e39a21beba9ea710ab4b9c63bc90"
+source = "git+https://github.com/rustopian/system.git?branch=create-account-prefunded#b9dcd9e11fcfe96c343d7de8de13c243974775c8"
 dependencies = [
  "js-sys",
  "num-traits",
@@ -10979,6 +10978,25 @@ dependencies = [
  "serde_derive",
  "solana-decode-error",
  "solana-instruction",
+ "solana-msg",
+ "solana-program-error",
+ "solana-pubkey",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "solana-system-interface"
+version = "1.0.0"
+source = "git+https://github.com/rustopian/system.git?branch=create-prefunded-account#176ada90f96bb76d08d1bab02e975d09988b7b24"
+dependencies = [
+ "js-sys",
+ "num-traits",
+ "serde",
+ "serde_derive",
+ "solana-decode-error",
+ "solana-instruction",
+ "solana-msg",
+ "solana-program-error",
  "solana-pubkey",
  "wasm-bindgen",
 ]
@@ -11011,7 +11029,7 @@ dependencies = [
  "solana-sha256-hasher",
  "solana-svm-callback",
  "solana-svm-feature-set",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-sysvar",
  "solana-transaction-context",
  "solana-type-overrides",
@@ -11028,7 +11046,7 @@ dependencies = [
  "solana-message",
  "solana-pubkey",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
  "solana-transaction",
 ]
 
@@ -11191,7 +11209,7 @@ dependencies = [
  "solana-signer",
  "solana-stake-interface",
  "solana-streamer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-test-validator",
  "solana-transaction",
  "solana-transaction-error",
@@ -11320,7 +11338,7 @@ dependencies = [
  "solana-short-vec",
  "solana-signature",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
  "solana-transaction-error",
  "wasm-bindgen",
 ]
@@ -11341,7 +11359,7 @@ dependencies = [
  "solana-sbpf",
  "solana-sdk-ids",
  "solana-signature",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-transaction-context",
  "static_assertions",
 ]
@@ -11377,7 +11395,7 @@ dependencies = [
  "solana-runtime",
  "solana-signer",
  "solana-streamer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-transaction",
  "solana-transaction-status",
  "solana-version",
@@ -11445,7 +11463,7 @@ dependencies = [
  "solana-sdk-ids",
  "solana-signature",
  "solana-stake-interface",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-transaction",
  "solana-transaction-error",
  "solana-transaction-status-client-types",
@@ -11762,7 +11780,7 @@ dependencies = [
  "solana-serde-varint",
  "solana-serialize-utils",
  "solana-short-vec",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-account-prefunded)",
 ]
 
 [[package]]
@@ -11871,7 +11889,7 @@ dependencies = [
  "solana-program-test",
  "solana-pubkey",
  "solana-signer",
- "solana-system-interface",
+ "solana-system-interface 1.0.0 (git+https://github.com/rustopian/system.git?branch=create-prefunded-account)",
  "solana-transaction",
  "solana-transaction-error",
  "solana-zk-sdk 3.0.0",
