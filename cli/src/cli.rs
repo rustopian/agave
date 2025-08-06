@@ -2042,7 +2042,10 @@ mod tests {
             "sign-offchain-message",
             "Test Message",
         ]);
-        let message = OffchainMessage::new(0, b"Test Message").unwrap();
+        let application_domain = [0u8; 32];
+        let signer_pubkey = keypair.pubkey().to_bytes();
+        let signers = [signer_pubkey];
+        let message = OffchainMessage::new(0, application_domain, &signers, b"Test Message").unwrap();
         assert_eq!(
             parse_command(&test_sign_offchain, &default_signer, &mut None).unwrap(),
             CliCommandInfo {
@@ -2065,7 +2068,7 @@ mod tests {
             parse_command(&test_verify_offchain, &default_signer, &mut None).unwrap(),
             CliCommandInfo {
                 command: CliCommand::VerifyOffchainSignature {
-                    signer_pubkey: None,
+                    signer_pubkey: Some(keypair.pubkey()),
                     signature,
                     message
                 },
@@ -2472,7 +2475,10 @@ mod tests {
         config.command = CliCommand::GetTransactionCount;
         assert!(process_command(&config).is_err());
 
-        let message = OffchainMessage::new(0, b"Test Message").unwrap();
+        let application_domain = [0u8; 32];
+        let signer_pubkey = keypair.pubkey().to_bytes();
+        let signers = [signer_pubkey];
+        let message = OffchainMessage::new(0, application_domain, &signers, b"Test Message").unwrap();
         config.command = CliCommand::SignOffchainMessage {
             message: message.clone(),
         };

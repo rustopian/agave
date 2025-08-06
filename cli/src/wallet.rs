@@ -604,12 +604,21 @@ pub fn parse_sign_offchain_message(
     let version: u8 = value_of(matches, "version").unwrap();
     let message_text: String = value_of(matches, "message")
         .ok_or_else(|| CliError::BadParameter("MESSAGE".to_string()))?;
-    let message = OffchainMessage::new(version, message_text.as_bytes())
+    
+    let signer = default_signer.signer_from_path(matches, wallet_manager)?;
+    let signer_pubkey = signer.pubkey().to_bytes();
+    let signers = [signer_pubkey];
+    
+    // Use a default application domain (all zeros for CLI usage)
+    // In a real application, this would be a meaningful identifier like a program address
+    let application_domain = [0u8; 32];
+    
+    let message = OffchainMessage::new(version, application_domain, &signers, message_text.as_bytes())
         .map_err(|_| CliError::BadParameter("VERSION or MESSAGE".to_string()))?;
 
     Ok(CliCommandInfo {
         command: CliCommand::SignOffchainMessage { message },
-        signers: vec![default_signer.signer_from_path(matches, wallet_manager)?],
+        signers: vec![signer],
     })
 }
 
@@ -621,22 +630,31 @@ pub fn parse_verify_offchain_signature(
     let version: u8 = value_of(matches, "version").unwrap();
     let message_text: String = value_of(matches, "message")
         .ok_or_else(|| CliError::BadParameter("MESSAGE".to_string()))?;
-    let message = OffchainMessage::new(version, message_text.as_bytes())
-        .map_err(|_| CliError::BadParameter("VERSION or MESSAGE".to_string()))?;
-
+    
     let signer_pubkey = pubkey_of_signer(matches, "signer", wallet_manager)?;
-    let signers = if signer_pubkey.is_some() {
-        vec![]
+    let (actual_signer_pubkey, signers) = if let Some(pubkey) = signer_pubkey {
+        (pubkey, vec![])
     } else {
-        vec![default_signer.signer_from_path(matches, wallet_manager)?]
+        let signer = default_signer.signer_from_path(matches, wallet_manager)?;
+        (signer.pubkey(), vec![signer])
     };
+    
+    let signer_pubkey_bytes = actual_signer_pubkey.to_bytes();
+    let signer_list = [signer_pubkey_bytes];
+    
+    // Use a default application domain (all zeros for CLI usage)
+    // In a real application, this would be a meaningful identifier like a program address
+    let application_domain = [0u8; 32];
+    
+    let message = OffchainMessage::new(version, application_domain, &signer_list, message_text.as_bytes())
+        .map_err(|_| CliError::BadParameter("VERSION or MESSAGE".to_string()))?;
 
     let signature = value_of(matches, "signature")
         .ok_or_else(|| CliError::BadParameter("SIGNATURE".to_string()))?;
 
     Ok(CliCommandInfo {
         command: CliCommand::VerifyOffchainSignature {
-            signer_pubkey,
+            signer_pubkey: Some(actual_signer_pubkey),
             signature,
             message,
         },

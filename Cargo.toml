@@ -463,7 +463,7 @@ solana-nohash-hasher = "0.2.1"
 solana-nonce = "2.2.1"
 solana-nonce-account = "2.2.1"
 solana-notifier = { path = "notifier", version = "=3.0.0" }
-solana-offchain-message = "2.2.1"
+solana-offchain-message = { version = "2.2.1", git = "https://github.com/rustopian/solana-sdk", branch = "fix-sign-offchain-message" }
 solana-packet = "2.2.1"
 solana-perf = { path = "perf", version = "=3.0.0" }
 solana-poh = { path = "poh", version = "=3.0.0" }
@@ -670,3 +670,4 @@ crossbeam-epoch = { git = "https://github.com/anza-xyz/crossbeam", rev = "fd279d
 # There is a similar override in `programs/sbf/Cargo.toml`.  Please keep both
 # comments and the overrides in sync.
 solana-curve25519 = { path = "curves/curve25519" }
+solana-offchain-message = { version = "2.2.1", git = "https://github.com/rustopian/solana-sdk", branch = "fix-sign-offchain-message" }
