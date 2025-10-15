@@ -176,7 +176,7 @@ dependencies = [
  "solana-message",
  "solana-pubkey 4.0.0",
  "solana-rpc-client",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "solana-transaction",
@@ -253,8 +253,8 @@ name = "agave-reserved-account-keys"
 version = "4.0.0-alpha.0"
 dependencies = [
  "agave-feature-set",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-message",
  "solana-pubkey 4.0.0",
  "solana-sdk-ids",
@@ -353,7 +353,7 @@ dependencies = [
  "solana-sbpf",
  "solana-sdk-ids",
  "solana-secp256k1-recover",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-slot-hashes",
  "solana-stable-layout",
  "solana-stake-interface",
@@ -408,7 +408,7 @@ dependencies = [
  "solana-packet 4.0.0",
  "solana-pubkey 4.0.0",
  "solana-sdk-ids",
- "solana-short-vec",
+ "solana-short-vec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "solana-svm-transaction",
@@ -549,8 +549,8 @@ dependencies = [
  "solana-connection-cache",
  "solana-entry",
  "solana-epoch-schedule",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-genesis-config",
  "solana-gossip",
  "solana-hash 3.1.0",
@@ -3103,9 +3103,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "five8_const"
+name = "five8"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23f76610e969fa1784327ded240f1e28a3fd9520c9cec93b636fcf62dd37f772"
+dependencies = [
+ "five8_core",
+]
+
+[[package]]
+name = "five8_const"
+version = "1.0.0"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a0f1728185f277989ca573a402716ae0beaaea3f76a8ff87ef9dd8fb19436c5"
 checksum = "1a0f1728185f277989ca573a402716ae0beaaea3f76a8ff87ef9dd8fb19436c5"
 dependencies = [
  "five8_core",
@@ -7051,8 +7062,8 @@ dependencies = [
  "serde_derive",
  "solana-account-info",
  "solana-clock",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-instruction-error",
  "solana-pubkey 3.0.0",
  "solana-sdk-ids",
@@ -7216,8 +7227,8 @@ dependencies = [
  "solana-compute-budget",
  "solana-epoch-schedule",
  "solana-fee-calculator",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-genesis-config",
  "solana-hash 3.1.0",
  "solana-instruction",
@@ -7232,7 +7243,7 @@ dependencies = [
  "solana-rent",
  "solana-reward-info",
  "solana-sdk-ids",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "solana-slot-hashes",
@@ -7278,6 +7289,7 @@ dependencies = [
  "bytemuck_derive",
  "curve25519-dalek 4.1.3",
  "five8 1.0.0",
+ "five8 1.0.0",
  "five8_const",
  "rand 0.8.5",
  "serde",
@@ -7288,7 +7300,7 @@ dependencies = [
  "solana-frozen-abi-macro",
  "solana-program-error",
  "solana-sanitize",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
 ]
 
 [[package]]
@@ -7312,8 +7324,7 @@ dependencies = [
 [[package]]
 name = "solana-atomic-u64"
 version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a933ff1e50aff72d02173cfcd7511bd8540b027ee720b75f353f594f834216d0"
+source = "git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund#c27c44e19ab88c3fe0b0aa1c7d3815e026b9a8a5"
 dependencies = [
  "parking_lot 0.12.3",
 ]
@@ -7441,7 +7452,7 @@ checksum = "30c80fb6d791b3925d5ec4bf23a7c169ef5090c013059ec3ed7d0b2c04efa085"
 dependencies = [
  "num-bigint 0.4.6",
  "num-traits",
- "solana-define-syscall 3.0.0",
+ "solana-define-syscall 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -7481,7 +7492,7 @@ dependencies = [
  "solana-frozen-abi-macro",
  "solana-hash 3.1.0",
  "solana-sanitize",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-time-utils",
 ]
@@ -7504,8 +7515,8 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "subtle",
@@ -7523,7 +7534,7 @@ dependencies = [
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
  "bytemuck",
- "solana-define-syscall 3.0.0",
+ "solana-define-syscall 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 2.0.17",
 ]
 
@@ -7649,7 +7660,7 @@ dependencies = [
  "rand 0.8.5",
  "solana-bpf-loader-program",
  "solana-compute-budget-program",
- "solana-frozen-abi",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-loader-v4-program",
  "solana-pubkey 4.0.0",
  "solana-sdk-ids",
@@ -7826,7 +7837,7 @@ dependencies = [
  "solana-rpc-client-nonce-utils",
  "solana-sbpf",
  "solana-sdk-ids",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "solana-slot-history",
@@ -8052,7 +8063,7 @@ version = "4.0.0-alpha.0"
 dependencies = [
  "qualifier_attr",
  "solana-fee-structure",
- "solana-frozen-abi",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-program-runtime",
 ]
 
@@ -8240,8 +8251,8 @@ dependencies = [
  "solana-fee",
  "solana-fee-calculator",
  "solana-fee-structure",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-genesis-config",
  "solana-genesis-utils",
  "solana-geyser-plugin-manager",
@@ -8277,8 +8288,8 @@ dependencies = [
  "solana-sanitize",
  "solana-sdk-ids",
  "solana-send-transaction-service",
- "solana-sha256-hasher",
- "solana-short-vec",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-short-vec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-shred-version",
  "solana-signature",
  "solana-signer",
@@ -8499,8 +8510,8 @@ dependencies = [
  "solana-perf",
  "solana-pubkey 4.0.0",
  "solana-runtime-transaction",
- "solana-sha256-hasher",
- "solana-short-vec",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-short-vec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "solana-system-transaction",
@@ -8552,8 +8563,8 @@ checksum = "6e5481e72cc4d52c169db73e4c0cd16de8bc943078aac587ec4817a75cc6388f"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-sdk-ids",
  "solana-sdk-macro",
  "solana-sysvar-id",
@@ -8659,8 +8670,8 @@ dependencies = [
  "log",
  "serde",
  "serde_derive",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -8671,7 +8682,7 @@ checksum = "5e2abdb1223eea8ec64136f39cb1ffcf257e00f915c957c35c0dd9e3f4e700b0"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-frozen-abi",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -8796,7 +8807,7 @@ dependencies = [
  "solana-pubkey 3.0.0",
  "solana-rent",
  "solana-sdk-ids",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-shred-version",
  "solana-signer",
  "solana-time-utils",
@@ -8902,8 +8913,8 @@ dependencies = [
  "solana-runtime",
  "solana-sanitize",
  "solana-serde-varint",
- "solana-sha256-hasher",
- "solana-short-vec",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-short-vec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "solana-streamer",
@@ -8942,8 +8953,8 @@ checksum = "0abacc4b66ce471f135f48f22facf75cbbb0f8a252fbe2c1e0aa59d5b203f519"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -8965,11 +8976,12 @@ dependencies = [
  "bytemuck",
  "bytemuck_derive",
  "five8 1.0.0",
+ "five8 1.0.0",
  "serde",
  "serde_derive",
  "solana-atomic-u64",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
+ "solana-frozen-abi-macro 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
  "solana-sanitize",
 ]
 
@@ -8981,8 +8993,8 @@ checksum = "e92f37a14e7c660628752833250dd3dcd8e95309876aee751d7f8769a27947c6"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -9011,9 +9023,9 @@ dependencies = [
  "num-traits",
  "serde",
  "serde_derive",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
- "solana-program-error",
+ "solana-frozen-abi 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
+ "solana-frozen-abi-macro 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
+ "solana-program-error 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
 ]
 
 [[package]]
@@ -9170,8 +9182,8 @@ dependencies = [
  "solana-cost-model",
  "solana-entry",
  "solana-epoch-schedule",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-genesis-config",
  "solana-genesis-utils",
  "solana-hash 3.1.0",
@@ -9194,7 +9206,7 @@ dependencies = [
  "solana-runtime",
  "solana-runtime-transaction",
  "solana-seed-derivable",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-shred-version",
  "solana-signature",
  "solana-signer",
@@ -9384,8 +9396,7 @@ dependencies = [
 [[package]]
 name = "solana-message"
 version = "3.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85666605c9fd727f865ed381665db0a8fc29f984a030ecc1e40f43bfb2541623"
+source = "git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund#c27c44e19ab88c3fe0b0aa1c7d3815e026b9a8a5"
 dependencies = [
  "bincode",
  "blake3",
@@ -9397,7 +9408,7 @@ dependencies = [
  "solana-instruction",
  "solana-sanitize",
  "solana-sdk-ids",
- "solana-short-vec",
+ "solana-short-vec 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
  "solana-transaction-error",
 ]
 
@@ -9426,7 +9437,15 @@ version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "264275c556ea7e22b9d3f87d56305546a38d4eee8ec884f3b126236cb7dcbbb4"
 dependencies = [
- "solana-define-syscall 3.0.0",
+ "solana-define-syscall 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "solana-msg"
+version = "3.0.0"
+source = "git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund#c27c44e19ab88c3fe0b0aa1c7d3815e026b9a8a5"
+dependencies = [
+ "solana-define-syscall 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
 ]
 
 [[package]]
@@ -9514,7 +9533,7 @@ dependencies = [
  "solana-packet 3.0.0",
  "solana-pubkey 3.0.0",
  "solana-sanitize",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
 ]
@@ -9580,7 +9599,7 @@ dependencies = [
  "solana-pubkey 4.0.0",
  "solana-rayon-threadlimit",
  "solana-sdk-ids",
- "solana-short-vec",
+ "solana-short-vec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "solana-system-interface 3.0.0",
@@ -9621,7 +9640,7 @@ dependencies = [
  "solana-poh-config",
  "solana-pubkey 4.0.0",
  "solana-runtime",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signer",
  "solana-system-transaction",
  "solana-time-utils",
@@ -9642,7 +9661,7 @@ dependencies = [
  "solana-entry",
  "solana-measure",
  "solana-perf",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-version",
 ]
 
@@ -9700,7 +9719,7 @@ dependencies = [
  "solana-blake3-hasher",
  "solana-clock",
  "solana-cpi",
- "solana-define-syscall 3.0.0",
+ "solana-define-syscall 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-epoch-rewards",
  "solana-epoch-schedule",
  "solana-epoch-stake",
@@ -9712,10 +9731,10 @@ dependencies = [
  "solana-instructions-sysvar",
  "solana-keccak-hasher",
  "solana-last-restart-slot",
- "solana-msg",
+ "solana-msg 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-native-token",
  "solana-program-entrypoint",
- "solana-program-error",
+ "solana-program-error 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-program-memory",
  "solana-program-option",
  "solana-program-pack",
@@ -9725,8 +9744,8 @@ dependencies = [
  "solana-secp256k1-recover",
  "solana-serde-varint",
  "solana-serialize-utils",
- "solana-sha256-hasher",
- "solana-short-vec",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-short-vec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-slot-hashes",
  "solana-slot-history",
  "solana-stable-layout",
@@ -9792,7 +9811,7 @@ version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c169359de21f6034a63ebf96d6b380980307df17a8d371344ff04a883ec4e9d0"
 dependencies = [
- "solana-program-error",
+ "solana-program-error 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -9881,13 +9900,13 @@ dependencies = [
  "solana-keypair",
  "solana-loader-v3-interface",
  "solana-message",
- "solana-msg",
+ "solana-msg 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-native-token",
  "solana-poh-config",
  "solana-program",
  "solana-program-binaries",
  "solana-program-entrypoint",
- "solana-program-error",
+ "solana-program-error 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-program-runtime",
  "solana-program-test",
  "solana-pubkey 4.0.0",
@@ -10044,8 +10063,8 @@ checksum = "b702d8c43711e3c8a9284a4f1bbc6a3de2553deb25b0c8142f9a44ef0ce5ddc1"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-sdk-ids",
  "solana-sdk-macro",
  "solana-sysvar-id",
@@ -10133,7 +10152,7 @@ dependencies = [
  "solana-runtime-transaction",
  "solana-sdk-ids",
  "solana-send-transaction-service",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "solana-slot-history",
@@ -10255,7 +10274,7 @@ dependencies = [
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-sdk-ids",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signer",
  "solana-system-interface 3.0.0",
  "solana-transaction",
@@ -10409,8 +10428,8 @@ dependencies = [
  "solana-fee",
  "solana-fee-calculator",
  "solana-fee-structure",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-genesis-config",
  "solana-hard-forks",
  "solana-hash 3.1.0",
@@ -10444,7 +10463,7 @@ dependencies = [
  "solana-secp256k1-program",
  "solana-seed-derivable",
  "solana-serde",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "solana-slot-hashes",
@@ -10515,8 +10534,7 @@ dependencies = [
 [[package]]
 name = "solana-sanitize"
 version = "3.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcf09694a0fc14e5ffb18f9b7b7c0f15ecb6eac5b5610bf76a1853459d19daf9"
+source = "git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund#c27c44e19ab88c3fe0b0aa1c7d3815e026b9a8a5"
 
 [[package]]
 name = "solana-sbpf"
@@ -10540,8 +10558,7 @@ dependencies = [
 [[package]]
 name = "solana-sdk-ids"
 version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1b6d6aaf60669c592838d382266b173881c65fb1cdec83b37cb8ce7cb89f9ad"
+source = "git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund#c27c44e19ab88c3fe0b0aa1c7d3815e026b9a8a5"
 dependencies = [
  "solana-pubkey 3.0.0",
 ]
@@ -10717,8 +10734,7 @@ dependencies = [
 [[package]]
 name = "solana-signature"
 version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bb8057cc0e9f7b5e89883d49de6f407df655bb6f3a71d0b7baf9986a2218fd9"
+source = "git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund#c27c44e19ab88c3fe0b0aa1c7d3815e026b9a8a5"
 dependencies = [
  "ed25519-dalek 2.2.0",
  "five8 0.2.1",
@@ -10726,16 +10742,15 @@ dependencies = [
  "serde",
  "serde-big-array",
  "serde_derive",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
+ "solana-frozen-abi-macro 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
  "solana-sanitize",
 ]
 
 [[package]]
 name = "solana-signer"
 version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5bfea97951fee8bae0d6038f39a5efcb6230ecdfe33425ac75196d1a1e3e3235"
+source = "git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund#c27c44e19ab88c3fe0b0aa1c7d3815e026b9a8a5"
 dependencies = [
  "solana-pubkey 3.0.0",
  "solana-signature",
@@ -10833,8 +10848,8 @@ dependencies = [
  "serde_derive",
  "solana-clock",
  "solana-cpi",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-instruction",
  "solana-program-error",
  "solana-pubkey 3.0.0",
@@ -11161,8 +11176,7 @@ dependencies = [
 [[package]]
 name = "solana-system-interface"
 version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e1790547bfc3061f1ee68ea9d8dc6c973c02a163697b24263a8e9f2e6d4afa2"
+source = "git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund#c27c44e19ab88c3fe0b0aa1c7d3815e026b9a8a5"
 dependencies = [
  "num-traits",
  "serde",
@@ -11211,7 +11225,7 @@ dependencies = [
  "solana-pubkey 4.0.0",
  "solana-rent",
  "solana-sdk-ids",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-svm-callback",
  "solana-svm-feature-set",
  "solana-svm-log-collector",
@@ -11262,7 +11276,7 @@ dependencies = [
  "solana-instruction",
  "solana-last-restart-slot",
  "solana-program-entrypoint",
- "solana-program-error",
+ "solana-program-error 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-program-memory",
  "solana-pubkey 4.0.0",
  "solana-rent",
@@ -11516,7 +11530,7 @@ dependencies = [
  "solana-message",
  "solana-sanitize",
  "solana-sdk-ids",
- "solana-short-vec",
+ "solana-short-vec 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
  "solana-signature",
  "solana-signer",
  "solana-transaction-error",
@@ -11584,13 +11598,12 @@ dependencies = [
 [[package]]
 name = "solana-transaction-error"
 version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4222065402340d7e6aec9dc3e54d22992ddcf923d91edcd815443c2bfca3144a"
+source = "git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund#c27c44e19ab88c3fe0b0aa1c7d3815e026b9a8a5"
 dependencies = [
  "serde",
  "serde_derive",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
+ "solana-frozen-abi-macro 3.0.0 (git+https://github.com/rustopian/solana-sdk.git?branch=create-account-allow-prefund)",
  "solana-instruction-error",
  "solana-sanitize",
 ]
@@ -11829,8 +11842,8 @@ dependencies = [
  "rand 0.9.2",
  "semver 1.0.27",
  "serde",
- "solana-frozen-abi",
- "solana-frozen-abi-macro",
+ "solana-frozen-abi 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-frozen-abi-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-sanitize",
  "solana-serde-varint",
 ]
@@ -11911,7 +11924,7 @@ dependencies = [
  "solana-pubkey 4.0.0",
  "solana-sdk-ids",
  "solana-serialize-utils",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signature",
  "solana-signer",
  "solana-svm-transaction",
@@ -11979,7 +11992,7 @@ dependencies = [
  "solana-pubkey 4.0.0",
  "solana-rent",
  "solana-sdk-ids",
- "solana-sha256-hasher",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-signer",
  "solana-slot-hashes",
  "solana-svm-feature-set",
@@ -12186,8 +12199,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d48cc11459e265d5b501534144266620289720b4c44522a47bc6b63cd295d2f3"
 dependencies = [
  "bytemuck",
- "solana-program-error",
- "solana-sha256-hasher",
+ "solana-program-error 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sha256-hasher 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-discriminator-derive",
 ]
 
@@ -12247,7 +12260,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "solana-program-error",
+ "solana-program-error 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-program-option",
  "solana-pubkey 3.0.0",
  "solana-zk-sdk",
@@ -12267,7 +12280,7 @@ dependencies = [
  "num_enum",
  "solana-account-info",
  "solana-instruction",
- "solana-program-error",
+ "solana-program-error 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-program-option",
  "solana-program-pack",
  "solana-pubkey 3.0.0",
@@ -12343,7 +12356,7 @@ dependencies = [
  "num-traits",
  "num_enum",
  "solana-instruction",
- "solana-program-error",
+ "solana-program-error 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-program-option",
  "solana-program-pack",
  "solana-pubkey 3.0.0",
@@ -12381,8 +12394,8 @@ dependencies = [
  "num-traits",
  "num_enum",
  "solana-account-info",
- "solana-msg",
- "solana-program-error",
+ "solana-msg 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-program-error 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-discriminator",
  "spl-pod",
  "thiserror 2.0.17",
@@ -13734,7 +13747,7 @@ checksum = "f67e680788539097c13ae4311dc36e850624b62b2f481271621adef0fbac6062"
 dependencies = [
  "proc-macro2",
  "quote",
- "solana-short-vec",
+ "solana-short-vec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 2.0.17",
  "wincode-derive",
 ]

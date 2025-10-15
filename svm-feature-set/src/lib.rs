@@ -48,11 +48,7 @@ pub struct SVMFeatureSet {
     pub delay_commission_updates: bool,
     pub raise_cpi_nesting_limit_to_8: bool,
     pub provide_instruction_data_offset_in_vm_r2: bool,
-    pub increase_cpi_account_info_limit: bool,
-    pub vote_state_v4: bool,
-    pub poseidon_enforce_padding: bool,
-    pub fix_alt_bn128_pairing_length_check: bool,
-    pub alt_bn128_little_endian: bool,
+    pub create_account_allow_prefund: bool,
 }
 
 impl SVMFeatureSet {
@@ -97,11 +93,7 @@ impl SVMFeatureSet {
             delay_commission_updates: true,
             raise_cpi_nesting_limit_to_8: true,
             provide_instruction_data_offset_in_vm_r2: true,
-            increase_cpi_account_info_limit: true,
-            vote_state_v4: true,
-            poseidon_enforce_padding: true,
-            fix_alt_bn128_pairing_length_check: true,
-            alt_bn128_little_endian: true,
+            create_account_allow_prefund: true,
         }
     }
 }

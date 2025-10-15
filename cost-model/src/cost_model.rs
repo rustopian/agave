@@ -222,6 +222,7 @@ impl CostModel {
     ) -> SystemProgramAccountAllocation {
         match instruction {
             SystemInstruction::CreateAccount { space, .. }
+            | SystemInstruction::CreateAccountAllowPrefund { space, .. }
             | SystemInstruction::CreateAccountWithSeed { space, .. }
             | SystemInstruction::Allocate { space }
             | SystemInstruction::AllocateWithSeed { space, .. } => {
@@ -478,6 +479,11 @@ mod tests {
         let base = Pubkey::default();
         for instruction in [
             SystemInstruction::CreateAccount {
+                lamports,
+                space,
+                owner,
+            },
+            SystemInstruction::CreateAccountAllowPrefund {
                 lamports,
                 space,
                 owner,
