@@ -89,6 +89,28 @@ impl TestSetup {
         .unwrap();
     }
 
+    fn prep_create_account_allow_prefund(&mut self) {
+        self.instruction_accounts = vec![
+            AccountMeta {
+                pubkey: self.funding_address,
+                is_signer: true,
+                is_writable: true,
+            },
+            AccountMeta {
+                pubkey: self.derived_address,
+                is_signer: true,
+                is_writable: true,
+            },
+        ];
+
+        self.instruction_data = bincode::serialize(&SystemInstruction::CreateAccountAllowPrefund {
+            lamports: 1,
+            space: 2,
+            owner: self.owner_address,
+        })
+        .unwrap();
+    }
+
     fn prep_create_account_with_seed(&mut self) {
         self.instruction_accounts = vec![
             AccountMeta {
