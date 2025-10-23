@@ -11,7 +11,7 @@ use {
     solana_test_validator::TestValidator,
 };
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_cli_request_airdrop() {
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();

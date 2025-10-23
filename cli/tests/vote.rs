@@ -20,7 +20,7 @@ use {
     test_case::test_case,
 };
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 #[test_case(None; "base")]
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_vote_authorize_and_withdraw(compute_unit_price: Option<u64>) {
@@ -235,7 +235,7 @@ async fn test_vote_authorize_and_withdraw(compute_unit_price: Option<u64>) {
     check_balance!(expected_balance, &rpc_client, &destination_account);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 #[test_case(None; "base")]
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_offline_vote_authorize_and_withdraw(compute_unit_price: Option<u64>) {
