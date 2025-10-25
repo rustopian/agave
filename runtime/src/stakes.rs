@@ -10,6 +10,7 @@ use {
     rayon::{prelude::*, ThreadPool},
     serde::{Deserialize, Serialize},
     solana_account::{AccountSharedData, ReadableAccount},
+    solana_accounts_db::utils::create_account_shared_data,
     solana_clock::Epoch,
     solana_pubkey::Pubkey,
     solana_stake_interface::state::{Delegation, StakeActivationStatus},
@@ -93,7 +94,7 @@ impl StakesCache {
         debug_assert_ne!(account.lamports(), 0u64);
         if solana_vote_program::check_id(owner) {
             if VoteStateVersions::is_correct_size_and_initialized(account.data()) {
-                match VoteAccount::try_from(account.to_account_shared_data()) {
+                match VoteAccount::try_from(create_account_shared_data(account)) {
                     Ok(vote_account) => {
                         // drop the old account after releasing the lock
                         let _old_vote_account = {
@@ -121,7 +122,7 @@ impl StakesCache {
                 };
             };
         } else if solana_stake_program::check_id(owner) {
-            match StakeAccount::try_from(account.to_account_shared_data()) {
+            match StakeAccount::try_from(create_account_shared_data(account)) {
                 Ok(stake_account) => {
                     let mut stakes = self.0.write().unwrap();
                     stakes.upsert_stake_delegation(
@@ -513,15 +514,9 @@ fn refresh_vote_accounts(
 #[cfg(test)]
 pub(crate) mod tests {
     use {
-        super::*,
-        rayon::ThreadPoolBuilder,
-        solana_account::WritableAccount,
-        solana_pubkey::Pubkey,
-        solana_rent::Rent,
-        solana_stake_interface as stake,
-        solana_stake_program::stake_state,
-        solana_vote_interface::state::{VoteStateV3, VoteStateVersions},
-        solana_vote_program::vote_state,
+        super::*, rayon::ThreadPoolBuilder, solana_account::WritableAccount, solana_pubkey::Pubkey,
+        solana_rent::Rent, solana_stake_interface as stake, solana_stake_program::stake_state,
+        solana_vote_interface::state::VoteStateV4, solana_vote_program::vote_state,
     };
 
     //  set up some dummies for a staked node     ((     vote      )  (     stake     ))
@@ -529,8 +524,15 @@ pub(crate) mod tests {
         stake: u64,
     ) -> ((Pubkey, AccountSharedData), (Pubkey, AccountSharedData)) {
         let vote_pubkey = solana_pubkey::new_rand();
-        let vote_account =
-            vote_state::create_account(&vote_pubkey, &solana_pubkey::new_rand(), 0, 1);
+        let node_pubkey = solana_pubkey::new_rand();
+        let vote_account = vote_state::create_v4_account_with_authorized(
+            &node_pubkey,
+            &vote_pubkey,
+            &vote_pubkey,
+            None,
+            0,
+            1,
+        );
         let stake_pubkey = solana_pubkey::new_rand();
         (
             (vote_pubkey, vote_account),
@@ -547,10 +549,18 @@ pub(crate) mod tests {
         vote_pubkey: &Pubkey,
         stake_pubkey: &Pubkey,
     ) -> AccountSharedData {
+        let node_pubkey = solana_pubkey::new_rand();
         stake_state::create_account(
             stake_pubkey,
             vote_pubkey,
-            &vote_state::create_account(vote_pubkey, &solana_pubkey::new_rand(), 0, 1),
+            &vote_state::create_v4_account_with_authorized(
+                &node_pubkey,
+                vote_pubkey,
+                vote_pubkey,
+                None,
+                0,
+                1,
+            ),
             &Rent::free(),
             stake,
         )
@@ -636,7 +646,9 @@ pub(crate) mod tests {
         stakes_cache.check_and_store(&vote11_pubkey, &vote11_account, None);
         stakes_cache.check_and_store(&stake11_pubkey, &stake11_account, None);
 
-        let vote11_node_pubkey = vote_state::from(&vote11_account).unwrap().node_pubkey;
+        let vote11_node_pubkey = VoteStateV4::deserialize(vote11_account.data(), &vote11_pubkey)
+            .unwrap()
+            .node_pubkey;
 
         let highest_staked_node = stakes_cache.stakes().highest_staked_node().copied();
         assert_eq!(highest_staked_node, Some(vote11_node_pubkey));
@@ -697,9 +709,7 @@ pub(crate) mod tests {
         }
 
         // Vote account uninitialized
-        let default_vote_state = VoteStateV3::default();
-        let versioned = VoteStateVersions::new_v3(default_vote_state);
-        vote_state::to(&versioned, &mut vote_account).unwrap();
+        vote_account.set_data(vec![0; VoteStateV4::size_of()]);
         stakes_cache.check_and_store(&vote_pubkey, &vote_account, None);
 
         {
