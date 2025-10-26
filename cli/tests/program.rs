@@ -426,7 +426,7 @@ async fn test_cli_program_deploy_no_authority() {
     .await;
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 12)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 #[test_case(true, true; "Feature enabled, skip preflight")]
 #[test_case(true, false; "Feature enabled, don't skip preflight")]
 #[test_case(false, true; "Feature disabled, skip preflight")]
