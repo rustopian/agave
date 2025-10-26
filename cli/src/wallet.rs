@@ -1001,7 +1001,6 @@ pub async fn process_transfer(
             rpc_client
                 .send_transaction_with_config(&tx, config.send_transaction_config)
                 .await
-                .map(|_| Signature::default())
         } else {
             rpc_client
                 .send_and_confirm_transaction_with_spinner_and_config(
