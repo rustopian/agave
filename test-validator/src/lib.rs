@@ -663,7 +663,6 @@ impl TestValidatorGenesis {
 
     /// Start a test validator with the address of the mint account that will receive tokens
     /// created at genesis.
-    ///
     pub fn start_with_mint_address(
         &self,
         mint_address: Pubkey,
@@ -674,17 +673,13 @@ impl TestValidatorGenesis {
 
     /// Start a test validator with the address of the mint account that will receive tokens
     /// created at genesis. Augments admin rpc service with dynamic geyser plugin manager if
-    /// the geyser plugin service is enabled at startup.
-    ///
+    /// the geyser plugin service is enabled at startup. Does not wait for fees to stabilize.
     pub fn start_with_mint_address_and_geyser_plugin_rpc(
         &self,
         mint_address: Pubkey,
         socket_addr_space: SocketAddrSpace,
         rpc_to_plugin_manager_receiver: Option<Receiver<GeyserPluginManagerRequest>>,
     ) -> Result<TestValidator, Box<dyn std::error::Error>> {
-        // This method returns a Result and doesn't wait for fees to stabilize.
-        // Callers (especially async ones like async_with_custom_fees) should call
-        // wait_for_nonzero_fees() themselves if needed.
         TestValidator::start(
             mint_address,
             self,
@@ -713,9 +708,7 @@ impl TestValidatorGenesis {
         &self,
         socket_addr_space: SocketAddrSpace,
     ) -> (TestValidator, Keypair) {
-        // This sync method creates its own runtime to wait for fees and programs.
-        // It will panic if called from within an async runtime (see document_tokio_panic test).
-        // Use multi_thread runtime to avoid deadlocks when HTTP client spawns tasks.
+        // Using multi_thread to avoid deadlocks when client spawns tasks.
         let mint_keypair = Keypair::new();
         self.start_with_mint_address(mint_keypair.pubkey(), socket_addr_space)
             .inspect(|test_validator| {
@@ -742,7 +735,6 @@ impl TestValidatorGenesis {
 
     /// Start a test validator with the address of the mint account that will receive tokens
     /// created at genesis (async version).
-    ///
     pub async fn start_async_with_mint_address(
         &self,
         mint_address: Pubkey,
@@ -815,7 +807,6 @@ impl TestValidator {
             .start_with_mint_address(mint_address, socket_addr_space)
             .expect("validator start failed");
 
-        // Wait for validator to be ready using a multi-thread runtime
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(2)
             .enable_io()
@@ -847,7 +838,6 @@ impl TestValidator {
             .start_with_mint_address(mint_address, socket_addr_space)
             .expect("validator start failed");
 
-        // Wait for validator to be ready using a multi-thread runtime
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(2)
             .enable_io()
@@ -916,7 +906,6 @@ impl TestValidator {
             .faucet_addr(faucet_addr)
             .start_with_mint_address(mint_address, socket_addr_space)
             .expect("validator start failed");
-        // Wait for RPC to be ready and slots to progress
         test_validator.wait_for_rpc_ready().await;
         test_validator.wait_for_slots_to_progress().await;
         test_validator
@@ -942,7 +931,6 @@ impl TestValidator {
             .faucet_addr(faucet_addr)
             .start_with_mint_address(mint_address, socket_addr_space)
             .expect("validator start failed");
-        // Wait for RPC to be ready, slots to progress, then wait for fees
         test_validator.wait_for_rpc_ready().await;
         test_validator.wait_for_slots_to_progress().await;
         test_validator.wait_for_nonzero_fees().await;
