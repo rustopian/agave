@@ -203,7 +203,7 @@ async fn test_stake_delegation_force() {
 #[test_case(None; "base")]
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_seed_stake_delegation_and_deactivation(compute_unit_price: Option<u64>) {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -303,7 +303,7 @@ async fn test_seed_stake_delegation_and_deactivation(compute_unit_price: Option<
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn test_stake_delegation_and_withdraw_available() {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -478,7 +478,7 @@ async fn test_stake_delegation_and_withdraw_available() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn test_stake_delegation_and_withdraw_all() {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -650,7 +650,7 @@ async fn test_stake_delegation_and_withdraw_all() {
 #[test_case(None; "base")]
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_stake_delegation_and_deactivation(compute_unit_price: Option<u64>) {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -748,7 +748,7 @@ async fn test_stake_delegation_and_deactivation(compute_unit_price: Option<u64>)
 #[test_case(None; "base")]
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_offline_stake_delegation_and_deactivation(compute_unit_price: Option<u64>) {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -915,7 +915,7 @@ async fn test_offline_stake_delegation_and_deactivation(compute_unit_price: Opti
 #[test_case(None; "base")]
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_nonced_stake_delegation_and_deactivation(compute_unit_price: Option<u64>) {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -1053,7 +1053,7 @@ async fn test_nonced_stake_delegation_and_deactivation(compute_unit_price: Optio
 #[test_case(None; "base")]
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_stake_authorize(compute_unit_price: Option<u64>) {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -1390,7 +1390,7 @@ async fn test_stake_authorize(compute_unit_price: Option<u64>) {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn test_stake_authorize_with_fee_payer() {
-    solana_logger::setup();
+    agave_logger::setup();
     let fee_one_sig = FeeStructure::default().get_max_fee(1, 0);
     let fee_two_sig = FeeStructure::default().get_max_fee(2, 0);
 
@@ -1578,7 +1578,7 @@ async fn test_stake_authorize_with_fee_payer() {
 #[test_case(None; "base")]
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_stake_split(compute_unit_price: Option<u64>) {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -1746,7 +1746,7 @@ async fn test_stake_split(compute_unit_price: Option<u64>) {
 #[test_case(None; "base")]
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_stake_set_lockup(compute_unit_price: Option<u64>) {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -2041,7 +2041,7 @@ async fn test_stake_set_lockup(compute_unit_price: Option<u64>) {
 #[test_case(None; "base")]
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_offline_nonced_create_stake_account_and_withdraw(compute_unit_price: Option<u64>) {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -2294,7 +2294,7 @@ async fn test_offline_nonced_create_stake_account_and_withdraw(compute_unit_pric
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn test_stake_checked_instructions() {
-    solana_logger::setup();
+    agave_logger::setup();
 
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();

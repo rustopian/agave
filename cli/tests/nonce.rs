@@ -225,7 +225,7 @@ async fn test_nonce(
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn test_create_account_with_seed() {
     const ONE_SIG_FEE: u64 = 5000;
-    solana_logger::setup();
+    agave_logger::setup();
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
     let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);

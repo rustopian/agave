@@ -4641,7 +4641,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn test_cli_keypair_file() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let default_keypair = Keypair::new();
         let program_pubkey = Keypair::new();

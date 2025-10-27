@@ -31,7 +31,7 @@ use {
 #[test_case(true; "Skip Preflight")]
 #[test_case(false; "Don`t skip Preflight")]
 async fn test_transfer(skip_preflight: bool) {
-    solana_logger::setup();
+    agave_logger::setup();
     let fee_one_sig = FeeStructure::default().get_max_fee(1, 0);
     let fee_two_sig = FeeStructure::default().get_max_fee(2, 0);
     let mint_keypair = Keypair::new();
@@ -337,7 +337,7 @@ async fn test_transfer(skip_preflight: bool) {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_transfer_multisession_signing() {
-    solana_logger::setup();
+    agave_logger::setup();
     let fee_one_sig = FeeStructure::default().get_max_fee(1, 0);
     let fee_two_sig = FeeStructure::default().get_max_fee(2, 0);
     let mint_keypair = Keypair::new();
@@ -491,7 +491,7 @@ async fn test_transfer_multisession_signing() {
 #[test_case(None; "default")]
 #[test_case(Some(100_000); "with_compute_unit_price")]
 async fn test_transfer_all(compute_unit_price: Option<u64>) {
-    solana_logger::setup();
+    agave_logger::setup();
     let lamports_per_signature = FeeStructure::default().get_max_fee(1, 0);
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -575,7 +575,7 @@ async fn test_transfer_all(compute_unit_price: Option<u64>) {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_transfer_unfunded_recipient() {
-    solana_logger::setup();
+    agave_logger::setup();
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
     let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
@@ -633,7 +633,7 @@ async fn test_transfer_unfunded_recipient() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_transfer_with_seed() {
-    solana_logger::setup();
+    agave_logger::setup();
     let fee = FeeStructure::default().get_max_fee(1, 0);
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();

@@ -244,7 +244,7 @@ pub fn parse_args<'a>(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
-    solana_logger::setup_with_default("off");
+    agave_logger::setup_with_default("off");
     let matches = get_clap_app(
         crate_name!(),
         crate_description!(),
