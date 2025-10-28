@@ -787,6 +787,48 @@ pub struct TestValidator {
 }
 
 impl TestValidator {
+    /// Helper to block on async waiting logic
+    fn block_on_wait(&self, wait_for_fees: bool) {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_io()
+            .enable_time()
+            .build()
+            .unwrap();
+        runtime.block_on(async {
+            self.wait_for_rpc_ready().await;
+            self.wait_for_slots_to_progress().await;
+            if wait_for_fees {
+                self.wait_for_nonzero_fees().await;
+            }
+        });
+    }
+
+    /// Helper to create a configured genesis and start validator
+    fn start_with_config(
+        mint_address: Pubkey,
+        faucet_addr: Option<SocketAddr>,
+        socket_addr_space: SocketAddrSpace,
+        target_lamports_per_signature: u64,
+        tpu_enable_udp: bool,
+        wait_for_fees: bool,
+    ) -> Self {
+        let test_validator = TestValidatorGenesis::default()
+            .tpu_enable_udp(tpu_enable_udp)
+            .fee_rate_governor(FeeRateGovernor::new(target_lamports_per_signature, 0))
+            .rent(Rent {
+                lamports_per_byte_year: 1,
+                exemption_threshold: 1.0,
+                ..Rent::default()
+            })
+            .faucet_addr(faucet_addr)
+            .start_with_mint_address(mint_address, socket_addr_space)
+            .expect("validator start failed");
+
+        test_validator.block_on_wait(wait_for_fees);
+        test_validator
+    }
+
     /// Create and start a `TestValidator` with no transaction fees and minimal rent.
     /// Faucet optional.
     ///
@@ -796,28 +838,14 @@ impl TestValidator {
         faucet_addr: Option<SocketAddr>,
         socket_addr_space: SocketAddrSpace,
     ) -> Self {
-        let test_validator = TestValidatorGenesis::default()
-            .fee_rate_governor(FeeRateGovernor::new(0, 0))
-            .rent(Rent {
-                lamports_per_byte_year: 1,
-                exemption_threshold: 1.0,
-                ..Rent::default()
-            })
-            .faucet_addr(faucet_addr)
-            .start_with_mint_address(mint_address, socket_addr_space)
-            .expect("validator start failed");
-
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(2)
-            .enable_io()
-            .enable_time()
-            .build()
-            .unwrap();
-        runtime.block_on(async {
-            test_validator.wait_for_rpc_ready().await;
-            test_validator.wait_for_slots_to_progress().await;
-        });
-        test_validator
+        Self::start_with_config(
+            mint_address,
+            faucet_addr,
+            socket_addr_space,
+            0,
+            false,
+            false,
+        )
     }
 
     /// Create a test validator using udp for TPU.
@@ -826,29 +854,7 @@ impl TestValidator {
         faucet_addr: Option<SocketAddr>,
         socket_addr_space: SocketAddrSpace,
     ) -> Self {
-        let test_validator = TestValidatorGenesis::default()
-            .tpu_enable_udp(true)
-            .fee_rate_governor(FeeRateGovernor::new(0, 0))
-            .rent(Rent {
-                lamports_per_byte_year: 1,
-                exemption_threshold: 1.0,
-                ..Rent::default()
-            })
-            .faucet_addr(faucet_addr)
-            .start_with_mint_address(mint_address, socket_addr_space)
-            .expect("validator start failed");
-
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(2)
-            .enable_io()
-            .enable_time()
-            .build()
-            .unwrap();
-        runtime.block_on(async {
-            test_validator.wait_for_rpc_ready().await;
-            test_validator.wait_for_slots_to_progress().await;
-        });
-        test_validator
+        Self::start_with_config(mint_address, faucet_addr, socket_addr_space, 0, true, false)
     }
 
     /// Create and start a `TestValidator` with custom transaction fees and minimal rent.
@@ -861,6 +867,24 @@ impl TestValidator {
         faucet_addr: Option<SocketAddr>,
         socket_addr_space: SocketAddrSpace,
     ) -> Self {
+        Self::start_with_config(
+            mint_address,
+            faucet_addr,
+            socket_addr_space,
+            target_lamports_per_signature,
+            false,
+            true,
+        )
+    }
+
+    /// Helper to create a configured genesis and start validator (async version)
+    async fn async_start_with_config(
+        mint_address: Pubkey,
+        faucet_addr: Option<SocketAddr>,
+        socket_addr_space: SocketAddrSpace,
+        target_lamports_per_signature: u64,
+        wait_for_fees: bool,
+    ) -> Self {
         let test_validator = TestValidatorGenesis::default()
             .fee_rate_governor(FeeRateGovernor::new(target_lamports_per_signature, 0))
             .rent(Rent {
@@ -872,18 +896,11 @@ impl TestValidator {
             .start_with_mint_address(mint_address, socket_addr_space)
             .expect("validator start failed");
 
-        // Wait for validator to be ready using a multi-thread runtime
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(2)
-            .enable_io()
-            .enable_time()
-            .build()
-            .unwrap();
-        runtime.block_on(async {
-            test_validator.wait_for_rpc_ready().await;
-            test_validator.wait_for_slots_to_progress().await;
+        test_validator.wait_for_rpc_ready().await;
+        test_validator.wait_for_slots_to_progress().await;
+        if wait_for_fees {
             test_validator.wait_for_nonzero_fees().await;
-        });
+        }
         test_validator
     }
 
@@ -896,19 +913,7 @@ impl TestValidator {
         faucet_addr: Option<SocketAddr>,
         socket_addr_space: SocketAddrSpace,
     ) -> Self {
-        let test_validator = TestValidatorGenesis::default()
-            .fee_rate_governor(FeeRateGovernor::new(0, 0))
-            .rent(Rent {
-                lamports_per_byte_year: 1,
-                exemption_threshold: 1.0,
-                ..Rent::default()
-            })
-            .faucet_addr(faucet_addr)
-            .start_with_mint_address(mint_address, socket_addr_space)
-            .expect("validator start failed");
-        test_validator.wait_for_rpc_ready().await;
-        test_validator.wait_for_slots_to_progress().await;
-        test_validator
+        Self::async_start_with_config(mint_address, faucet_addr, socket_addr_space, 0, false).await
     }
 
     /// Create and start a `TestValidator` with custom transaction fees and minimal rent (async version).
@@ -921,20 +926,14 @@ impl TestValidator {
         faucet_addr: Option<SocketAddr>,
         socket_addr_space: SocketAddrSpace,
     ) -> Self {
-        let test_validator = TestValidatorGenesis::default()
-            .fee_rate_governor(FeeRateGovernor::new(target_lamports_per_signature, 0))
-            .rent(Rent {
-                lamports_per_byte_year: 1,
-                exemption_threshold: 1.0,
-                ..Rent::default()
-            })
-            .faucet_addr(faucet_addr)
-            .start_with_mint_address(mint_address, socket_addr_space)
-            .expect("validator start failed");
-        test_validator.wait_for_rpc_ready().await;
-        test_validator.wait_for_slots_to_progress().await;
-        test_validator.wait_for_nonzero_fees().await;
-        test_validator
+        Self::async_start_with_config(
+            mint_address,
+            faucet_addr,
+            socket_addr_space,
+            target_lamports_per_signature,
+            true,
+        )
+        .await
     }
 
     /// Initialize the ledger directory
@@ -1256,14 +1255,18 @@ impl TestValidator {
         Ok(test_validator)
     }
 
+    /// Helper to create an RPC client with short timeout for startup checks
+    fn get_short_timeout_rpc_client(&self) -> nonblocking::rpc_client::RpcClient {
+        nonblocking::rpc_client::RpcClient::new_with_timeout_and_commitment(
+            self.rpc_url.clone(),
+            Duration::from_secs(2),
+            CommitmentConfig::processed(),
+        )
+    }
+
     /// Wait for RPC to be responsive (async version)
     async fn wait_for_rpc_ready(&self) {
-        // Use a SHORT timeout so failed calls don't block for 30 seconds
-        let rpc_client = nonblocking::rpc_client::RpcClient::new_with_timeout_and_commitment(
-            self.rpc_url.clone(),
-            Duration::from_secs(2), // 2 second timeout per call
-            CommitmentConfig::processed(),
-        );
+        let rpc_client = self.get_short_timeout_rpc_client();
         const MAX_TRIES: u64 = 30;
         for attempt in 1..=MAX_TRIES {
             match rpc_client.get_health().await {
@@ -1279,12 +1282,7 @@ impl TestValidator {
 
     /// Wait for slots to start progressing (so the blockchain is actually running)
     async fn wait_for_slots_to_progress(&self) {
-        // Use a SHORT timeout so failed calls don't block for 30 seconds
-        let rpc_client = nonblocking::rpc_client::RpcClient::new_with_timeout_and_commitment(
-            self.rpc_url.clone(),
-            Duration::from_secs(2), // 2 second timeout per call
-            CommitmentConfig::processed(),
-        );
+        let rpc_client = self.get_short_timeout_rpc_client();
         const TARGET_SLOT: u64 = 5;
         const MAX_TRIES: u64 = 50;
         for _attempt in 1..=MAX_TRIES {
@@ -1304,12 +1302,7 @@ impl TestValidator {
     /// (fees from genesis are zero until the first block with a transaction in it is completed
     ///  due to a bug in the Bank)
     async fn wait_for_nonzero_fees(&self) {
-        // Use a SHORT timeout so failed calls don't block for 30 seconds
-        let rpc_client = nonblocking::rpc_client::RpcClient::new_with_timeout_and_commitment(
-            self.rpc_url.clone(),
-            Duration::from_secs(2), // 2 second timeout per call
-            CommitmentConfig::processed(),
-        );
+        let rpc_client = self.get_short_timeout_rpc_client();
         let mut message = Message::new(
             &[Instruction::new_with_bytes(
                 Pubkey::new_unique(),
