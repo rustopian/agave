@@ -27,6 +27,7 @@ use {
         },
         *,
     },
+    solana_client::nonblocking::tpu_client::TpuClient,
     solana_clock::{self as clock, Clock, Epoch, Slot},
     solana_commitment_config::CommitmentConfig,
     solana_hash::Hash,
@@ -34,6 +35,7 @@ use {
     solana_nonce::state::State as NonceState,
     solana_pubkey::Pubkey,
     solana_pubsub_client::pubsub_client::PubsubClient,
+    solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool},
     solana_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_rent::Rent,
     solana_rpc_client::{
@@ -1498,6 +1500,7 @@ pub async fn process_get_transaction_count(
 
 pub async fn process_ping(
     rpc_client: &RpcClient,
+    tpu_client: Option<&TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
     config: &CliConfig<'_>,
     interval: &Duration,
     count: &Option<u64>,
@@ -1598,7 +1601,19 @@ pub async fn process_ping(
             format!("[{}.{:06}] ", micros / 1_000_000, micros % 1_000_000)
         };
 
-        match rpc_client.send_transaction(&tx).await {
+        let send_result = if let Some(tpu_client) = tpu_client {
+            match tpu_client.try_send_transaction(&tx).await {
+                Ok(()) => Ok(*tx.signatures.first().unwrap()),
+                Err(err) => Err(format!("TPU send error: {err}")),
+            }
+        } else {
+            rpc_client
+                .send_transaction(&tx)
+                .await
+                .map_err(|err| err.to_string())
+        };
+
+        match send_result {
             Ok(signature) => {
                 let transaction_sent = Instant::now();
                 loop {

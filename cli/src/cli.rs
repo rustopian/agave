@@ -943,8 +943,31 @@ pub async fn process_command(config: &CliConfig<'_>) -> ProcessResult {
             print_timestamp,
             compute_unit_price,
         } => {
+            let maybe_tpu_client = if config.use_tpu_client {
+                use solana_client::{
+                    nonblocking::tpu_client::TpuClient, tpu_client::TpuClientConfig,
+                };
+                match TpuClient::new(
+                    "solana-cli",
+                    rpc_client.clone(),
+                    &config.websocket_url,
+                    TpuClientConfig::default(),
+                )
+                .await
+                {
+                    Ok(client) => Some(client),
+                    Err(err) => {
+                        eprintln!("Warning: Failed to create TPU client: {err}");
+                        eprintln!("Falling back to RPC client");
+                        None
+                    }
+                }
+            } else {
+                None
+            };
             process_ping(
                 &rpc_client,
+                maybe_tpu_client.as_ref(),
                 config,
                 interval,
                 count,
