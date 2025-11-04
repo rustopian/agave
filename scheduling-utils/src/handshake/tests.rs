@@ -30,14 +30,16 @@ fn message_passing_on_all_queues() {
         src_addr: [4; 16],
     };
     let progress_tracker = ProgressMessage {
+        leader_state: agave_scheduler_bindings::IS_LEADER,
         current_slot: 3,
         next_leader_slot: 12,
+        leader_range_end: 16,
         remaining_cost_units: 12_000_000,
         current_slot_progress: 32,
     };
     let pack_to_worker = PackToWorkerMessage {
         flags: 123,
-        max_execution_slot: 100,
+        max_working_slot: 100,
         batch: SharableTransactionBatchRegion {
             num_transactions: 5,
             transactions_offset: 100,
@@ -48,7 +50,7 @@ fn message_passing_on_all_queues() {
             num_transactions: 5,
             transactions_offset: 100,
         },
-        processed: 0x01,
+        processed_code: agave_scheduler_bindings::processed_codes::PROCESSED,
         responses: TransactionResponseRegion {
             tag: 3,
             num_transaction_responses: 2,
@@ -60,9 +62,9 @@ fn message_passing_on_all_queues() {
         let mut session = server.accept().unwrap();
 
         // Send a tpu_to_pack message.
-        let mut slot = session.tpu_to_pack.queue.reserve().unwrap();
+        let mut slot = session.tpu_to_pack.producer.reserve().unwrap();
         unsafe { *slot.as_mut() = tpu_to_pack };
-        session.tpu_to_pack.queue.commit();
+        session.tpu_to_pack.producer.commit();
 
         // Send a progress_tracker message.
         let mut slot = session.progress_tracker.reserve().unwrap();
@@ -79,7 +81,7 @@ fn message_passing_on_all_queues() {
             };
             assert_eq!(
                 PackToWorkerMessage {
-                    max_execution_slot: pack_to_worker.max_execution_slot + i as u64,
+                    max_working_slot: pack_to_worker.max_working_slot + i as u64,
                     ..pack_to_worker
                 },
                 msg
@@ -140,7 +142,7 @@ fn message_passing_on_all_queues() {
             let mut slot = worker.pack_to_worker.reserve().unwrap();
             unsafe {
                 *slot.as_mut() = PackToWorkerMessage {
-                    max_execution_slot: pack_to_worker.max_execution_slot + i as u64,
+                    max_working_slot: pack_to_worker.max_working_slot + i as u64,
                     ..pack_to_worker
                 }
             };

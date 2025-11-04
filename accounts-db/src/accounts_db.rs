@@ -45,9 +45,8 @@ use {
         accounts_index::{
             in_mem_accounts_index::StartupStats, AccountSecondaryIndexes, AccountsIndex,
             AccountsIndexRootsStats, AccountsIndexScanResult, IndexKey, IsCached, ReclaimsSlotList,
-            RefCount, ScanConfig, ScanFilter, ScanResult, SlotList, UpsertReclaim,
+            RefCount, ScanConfig, ScanFilter, ScanResult, SlotList, Startup, UpsertReclaim,
         },
-        accounts_index_storage::Startup,
         accounts_update_notifier_interface::{AccountForGeyser, AccountsUpdateNotifier},
         active_stats::{ActiveStatItem, ActiveStats},
         ancestors::Ancestors,
@@ -467,7 +466,6 @@ impl Default for SlotLtHash {
 struct GenerateIndexTimings {
     pub total_time_us: u64,
     pub index_time: u64,
-    pub scan_time: u64,
     pub insertion_time_us: u64,
     pub storage_size_storages_us: u64,
     pub index_flush_us: u64,
@@ -504,7 +502,6 @@ impl GenerateIndexTimings {
             ("overall_us", self.total_time_us, i64),
             // we cannot accurately measure index insertion time because of many threads and lock contention
             ("total_us", self.index_time, i64),
-            ("scan_stores_us", self.scan_time, i64),
             ("insertion_time_us", self.insertion_time_us, i64),
             (
                 "storage_size_storages_us",
@@ -920,7 +917,7 @@ impl AccountStorageEntry {
     }
 
     /// Locks obsolete accounts with a read lock and returns the the accounts with the guard
-    pub(crate) fn obsolete_accounts_read_lock(&self) -> RwLockReadGuard<ObsoleteAccounts> {
+    pub(crate) fn obsolete_accounts_read_lock(&self) -> RwLockReadGuard<'_, ObsoleteAccounts> {
         self.obsolete_accounts.read().unwrap()
     }
 
@@ -5053,6 +5050,19 @@ impl AccountsDb {
         // Safe because queries to the index will be reading updates from later roots.
         self.purge_slot_cache_pubkeys(slot, pubkeys, is_dead_slot);
 
+        // Use ReclaimOldSlots to reclaim old slots if marking obsolete accounts and cleaning
+        // Cleaning is enabled if `should_flush_f` is Some.
+        // should_flush_f is set to None when
+        // 1) There's an ongoing scan to avoid reclaiming accounts being scanned.
+        // 2) The slot is > max_clean_root to prevent unrooted slots from reclaiming rooted versions.
+        let reclaim_method = if self.mark_obsolete_accounts == MarkObsoleteAccounts::Enabled
+            && should_flush_f.is_some()
+        {
+            UpsertReclaim::ReclaimOldSlots
+        } else {
+            UpsertReclaim::IgnoreReclaims
+        };
+
         if !is_dead_slot {
             // This ensures that all updates are written to an AppendVec, before any
             // updates to the index happen, so anybody that sees a real entry in the index,
@@ -5062,19 +5072,6 @@ impl AccountsDb {
                 flush_stats.num_bytes_flushed.0,
                 "flush_slot_cache",
             );
-
-            // Use ReclaimOldSlots to reclaim old slots if marking obsolete accounts and cleaning
-            // Cleaning is enabled if `should_flush_f` is Some.
-            // should_flush_f is set to None when
-            // 1) There's an ongoing scan to avoid reclaiming accounts being scanned.
-            // 2) The slot is > max_clean_root to prevent unrooted slots from reclaiming rooted versions.
-            let reclaim_method = if self.mark_obsolete_accounts == MarkObsoleteAccounts::Enabled
-                && should_flush_f.is_some()
-            {
-                UpsertReclaim::ReclaimOldSlots
-            } else {
-                UpsertReclaim::IgnoreReclaims
-            };
 
             let (store_accounts_timing_inner, store_accounts_total_inner_us) = measure_us!(self
                 ._store_accounts_frozen(
@@ -5098,12 +5095,23 @@ impl AccountsDb {
         // flushing. That case is handled by retry_to_get_account_accessor()
         assert!(self.accounts_cache.remove_slot(slot).is_some());
 
-        // Add `accounts` to uncleaned_pubkeys since we know they were written
-        // to a storage and should be visited by `clean`.
-        self.uncleaned_pubkeys
-            .entry(slot)
-            .or_default()
-            .extend(accounts.into_iter().map(|(pubkey, _account)| *pubkey));
+        // Add `accounts` to uncleaned_pubkeys since they were written to storage
+        // and should be visited by `clean`.
+        // If old slots were reclaimed, accounts were already cleaned,
+        // but zero lamports need to be visited during clean for full removal.
+        if reclaim_method == UpsertReclaim::ReclaimOldSlots {
+            self.uncleaned_pubkeys.entry(slot).or_default().extend(
+                accounts
+                    .into_iter()
+                    .filter(|(_pubkey, account)| account.is_zero_lamport())
+                    .map(|(pubkey, _account)| pubkey),
+            );
+        } else {
+            self.uncleaned_pubkeys
+                .entry(slot)
+                .or_default()
+                .extend(accounts.into_iter().map(|(pubkey, _account)| *pubkey));
+        }
 
         flush_stats
     }
@@ -6611,7 +6619,7 @@ impl AccountsDb {
 
         {
             // Update the index stats now.
-            let index_stats = self.accounts_index.bucket_map_holder_stats();
+            let index_stats = self.accounts_index.stats();
 
             // stats for inserted entries that previously did *not* exist
             index_stats.inc_insert_count(total_accum.num_did_not_exist);
@@ -6712,7 +6720,6 @@ impl AccountsDb {
 
         let mut timings = GenerateIndexTimings {
             index_flush_us,
-            scan_time: 0,
             index_time: index_time.as_us(),
             insertion_time_us: total_accum.insert_us,
             total_duplicate_slot_keys: total_duplicate_slot_keys.load(Ordering::Relaxed),
@@ -6842,7 +6849,7 @@ impl AccountsDb {
             .map(|bin| bin.capacity_for_startup())
             .sum();
         self.accounts_index
-            .bucket_map_holder_stats()
+            .stats()
             .capacity_in_mem
             .store(index_capacity, Ordering::Relaxed);
 

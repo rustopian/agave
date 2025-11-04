@@ -4,6 +4,7 @@
 use {
     agave_banking_stage_ingress_types::BankingPacketReceiver,
     agave_scheduler_bindings::{tpu_message_flags, SharableTransactionRegion, TpuToPackMessage},
+    agave_scheduling_utils::handshake::server::AgaveTpuToPackSession,
     rts_alloc::Allocator,
     solana_packet::PacketFlags,
     solana_perf::packet::PacketBatch,
@@ -15,6 +16,7 @@ use {
             Arc,
         },
         thread::JoinHandle,
+        time::Duration,
     },
 };
 
@@ -28,8 +30,10 @@ pub struct BankingPacketReceivers {
 pub fn spawn(
     exit: Arc<AtomicBool>,
     receivers: BankingPacketReceivers,
-    allocator: rts_alloc::Allocator,
-    producer: shaq::Producer<TpuToPackMessage>,
+    AgaveTpuToPackSession {
+        allocator,
+        producer,
+    }: AgaveTpuToPackSession,
 ) -> JoinHandle<()> {
     std::thread::Builder::new()
         .name("solTpu2Pack".to_string())
@@ -60,6 +64,7 @@ fn tpu_to_pack(
             recv(non_vote_receiver) -> msg => msg,
             recv(gossip_vote_receiver) -> msg => msg,
             recv(tpu_vote_receiver) -> msg => msg,
+            default(Duration::from_secs(1)) => continue,
         } {
             Ok(packet_batches) => packet_batches,
             Err(crossbeam_channel::RecvError) => {

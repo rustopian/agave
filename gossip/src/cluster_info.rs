@@ -43,6 +43,7 @@ use {
         },
         weighted_shuffle::WeightedShuffle,
     },
+    arc_swap::ArcSwap,
     crossbeam_channel::{Receiver, TrySendError},
     itertools::{Either, Itertools},
     rand::{seq::SliceRandom, CryptoRng, Rng},
@@ -155,7 +156,7 @@ pub struct ClusterInfo {
     /// The network
     pub gossip: CrdsGossip,
     /// set the keypair that will be used to sign crds values generated. It is unset only in tests.
-    keypair: RwLock<Arc<Keypair>>,
+    keypair: ArcSwap<Keypair>,
     /// Network entrypoints
     entrypoints: RwLock<Vec<ContactInfo>>,
     outbound_budget: DataBudget,
@@ -179,7 +180,7 @@ impl ClusterInfo {
         assert_eq!(contact_info.pubkey(), &keypair.pubkey());
         let me = Self {
             gossip: CrdsGossip::default(),
-            keypair: RwLock::new(keypair),
+            keypair: ArcSwap::from(keypair),
             entrypoints: RwLock::default(),
             outbound_budget: DataBudget::default(),
             my_contact_info: RwLock::new(contact_info),
@@ -381,18 +382,17 @@ impl ClusterInfo {
     }
 
     pub fn id(&self) -> Pubkey {
-        self.keypair.read().unwrap().pubkey()
+        self.keypair.load().pubkey()
     }
 
     pub fn keypair(&self) -> Arc<Keypair> {
-        self.keypair.read().unwrap().clone()
+        self.keypair.load_full()
     }
 
     pub fn set_keypair(&self, new_keypair: Arc<Keypair>) {
         let id = new_keypair.pubkey();
-        *self.keypair.write().unwrap() = new_keypair;
+        self.keypair.store(new_keypair);
         self.my_contact_info.write().unwrap().hot_swap_pubkey(id);
-
         self.refresh_my_gossip_contact_info();
     }
 
@@ -570,7 +570,7 @@ impl ClusterInfo {
                     let ip_addr = node.gossip().as_ref().map(SocketAddr::ip);
                     Some(format!(
                         "{:15} {:2}| {:5} | {:44} |{:^9}| {:5}|  {:5}| {:5}| {:5}| {:5}| {:5}| \
-                         {:5}| {}\n",
+                         {:5}| {:5}| {}\n",
                         node.gossip()
                             .filter(|addr| self.socket_addr_space.check(addr))
                             .as_ref()
@@ -603,6 +603,7 @@ impl ClusterInfo {
                             &ip_addr,
                             &node.serve_repair(contact_info::Protocol::UDP)
                         ),
+                        self.addr_to_string(&ip_addr, &node.alpenglow()),
                         node.shred_version(),
                     ))
                 }
@@ -611,9 +612,9 @@ impl ClusterInfo {
 
         format!(
             "IP Address        |Age(ms)| Node identifier                              \
-             | Version |Gossip|TPUvote| TPU  |TPUfwd| TVU  |TVU Q |ServeR|ShredVer\n\
+             | Version |Gossip|TPUvote| TPU  |TPUfwd| TVU  |TVU Q |ServeR|Alpeng|ShredVer\n\
              ------------------+-------+----------------------------------------------\
-             +---------+------+-------+------+------+------+------+------+--------\n\
+             +---------+------+-------+------+------+------+------+------+------+--------\n\
              {}\
              Nodes: {}{}{}",
             nodes.join(""),
@@ -694,21 +695,20 @@ impl ClusterInfo {
         let mut entries = Vec::default();
         let keypair = self.keypair();
         while !update.is_empty() {
-            let ix = epoch_slot_index % crds_data::MAX_EPOCH_SLOTS;
             let now = timestamp();
             let mut slots = if !reset {
-                self.lookup_epoch_slots(ix)
+                self.lookup_epoch_slots(epoch_slot_index)
             } else {
                 EpochSlots::new(self_pubkey, now)
             };
             let n = slots.fill(update, now);
             update = &update[n..];
             if n > 0 {
-                let epoch_slots = CrdsData::EpochSlots(ix, slots);
+                let epoch_slots = CrdsData::EpochSlots(epoch_slot_index, slots);
                 let entry = CrdsValue::new(epoch_slots, &keypair);
                 entries.push(entry);
             }
-            epoch_slot_index += 1;
+            epoch_slot_index = epoch_slot_index.wrapping_add(1);
             reset = true;
         }
         let mut gossip_crds = self.gossip.crds.write().unwrap();
@@ -2391,6 +2391,8 @@ pub struct Sockets {
     pub alpenglow: Option<UdpSocket>,
     /// Connection cache endpoint for QUIC-based Vote
     pub quic_vote_client: UdpSocket,
+    /// Connection cache endpoint for QUIC-based Alpenglow messages
+    pub quic_alpenglow_client: UdpSocket,
     /// Client-side socket for RPC/SendTransactionService.
     pub rpc_sts_client: UdpSocket,
     pub vortexor_receivers: Option<Vec<UdpSocket>>,
@@ -2861,7 +2863,9 @@ mod tests {
     fn check_node_sockets(node: &Node, ip: IpAddr, range: (u16, u16)) {
         check_socket(&node.sockets.repair, ip, range);
         check_socket(&node.sockets.tvu_quic, ip, range);
-
+        if let Some(alpenglow_port) = &node.sockets.alpenglow {
+            check_socket(alpenglow_port, ip, range);
+        }
         check_sockets(&node.sockets.gossip, ip, range);
         check_sockets(&node.sockets.tvu, ip, range);
         check_sockets(&node.sockets.tpu, ip, range);
@@ -3765,6 +3769,10 @@ mod tests {
     #[test]
     fn test_contact_trace() {
         agave_logger::setup();
+        // If you change the format of cluster_info_trace or rpc_info_trace, please make sure
+        // you read the actual output so the headers lign up with the output.
+        const CLUSTER_INFO_TRACE_LENGTH: usize = 452;
+        const RPC_INFO_TRACE_LENGTH: usize = 335;
         let keypair43 = Arc::new(
             Keypair::try_from(
                 [
@@ -3805,19 +3813,19 @@ mod tests {
 
         let trace = cluster_info44.contact_info_trace();
         info!("cluster:\n{trace}");
-        assert_eq!(trace.len(), 431);
+        assert_eq!(trace.len(), CLUSTER_INFO_TRACE_LENGTH);
 
         let trace = cluster_info44.rpc_info_trace();
         info!("rpc:\n{trace}");
-        assert_eq!(trace.len(), 335);
+        assert_eq!(trace.len(), RPC_INFO_TRACE_LENGTH);
 
         let trace = cluster_info43.contact_info_trace();
         info!("cluster:\n{trace}");
-        assert_eq!(trace.len(), 431);
+        assert_eq!(trace.len(), CLUSTER_INFO_TRACE_LENGTH);
 
         let trace = cluster_info43.rpc_info_trace();
         info!("rpc:\n{trace}");
-        assert_eq!(trace.len(), 335);
+        assert_eq!(trace.len(), RPC_INFO_TRACE_LENGTH);
     }
 
     #[test]

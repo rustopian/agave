@@ -67,7 +67,7 @@ pub mod send_transaction_config;
 pub struct RunArgs {
     pub identity_keypair: Keypair,
     pub ledger_path: PathBuf,
-    pub logfile: String,
+    pub logfile: Option<PathBuf>,
     pub entrypoints: Vec<SocketAddr>,
     pub known_validators: Option<HashSet<Pubkey>>,
     pub socket_addr_space: SocketAddrSpace,
@@ -103,8 +103,13 @@ impl FromClapArgMatches for RunArgs {
 
         let logfile = matches
             .value_of("logfile")
-            .map(|s| s.into())
+            .map(String::from)
             .unwrap_or_else(|| format!("agave-validator-{}.log", identity_keypair.pubkey()));
+        let logfile = if logfile == "-" {
+            None
+        } else {
+            Some(PathBuf::from(logfile))
+        };
 
         let mut entrypoints = values_t!(matches, "entrypoint", String).unwrap_or_default();
         // sort() + dedup() to yield a vector of unique elements
@@ -220,37 +225,10 @@ pub fn add_args<'a>(app: App<'a, 'a>, default_args: &'a DefaultArgs) -> App<'a, 
             .help("Rendezvous with the cluster at this gossip entrypoint"),
     )
     .arg(
-        Arg::with_name("no_snapshot_fetch")
-            .long("no-snapshot-fetch")
-            .takes_value(false)
-            .help(
-                "Do not attempt to fetch a snapshot from the cluster, start from a local snapshot \
-                 if present",
-            ),
-    )
-    .arg(
-        Arg::with_name("no_genesis_fetch")
-            .long("no-genesis-fetch")
-            .takes_value(false)
-            .help("Do not fetch genesis from the cluster"),
-    )
-    .arg(
         Arg::with_name("no_voting")
             .long("no-voting")
             .takes_value(false)
             .help("Launch validator without voting"),
-    )
-    .arg(
-        Arg::with_name("check_vote_account")
-            .long("check-vote-account")
-            .takes_value(true)
-            .value_name("RPC_URL")
-            .requires("entrypoint")
-            .conflicts_with_all(&["no_voting"])
-            .help(
-                "Sanity check vote account state at startup. The JSON RPC endpoint at RPC_URL \
-                 must expose `--full-rpc-api`",
-            ),
     )
     .arg(
         Arg::with_name("restricted_repair_only_mode")
@@ -440,12 +418,6 @@ pub fn add_args<'a>(app: App<'a, 'a>, default_args: &'a DefaultArgs) -> App<'a, 
                 "full_snapshot_interval_slots",
             ])
             .help("Disable all snapshot generation"),
-    )
-    .arg(
-        Arg::with_name("no_incremental_snapshots")
-            .long("no-incremental-snapshots")
-            .takes_value(false)
-            .help("Disable incremental snapshots"),
     )
     .arg(
         Arg::with_name("snapshot_interval_slots")
@@ -745,14 +717,6 @@ pub fn add_args<'a>(app: App<'a, 'a>, default_args: &'a DefaultArgs) -> App<'a, 
             .help("Log when transactions are processed which reference a given key."),
     )
     .arg(
-        Arg::with_name("only_known_rpc")
-            .alias("no-untrusted-rpc")
-            .long("only-known-rpc")
-            .takes_value(false)
-            .requires("known_validators")
-            .help("Use the RPC service of known validators only"),
-    )
-    .arg(
         Arg::with_name("repair_validators")
             .long("repair-validator")
             .validator(is_pubkey)
@@ -789,14 +753,6 @@ pub fn add_args<'a>(app: App<'a, 'a>, default_args: &'a DefaultArgs) -> App<'a, 
                 "A list of validators to gossip with. If specified, gossip will not push/pull \
                  from from validators outside this set. [default: all validators]",
             ),
-    )
-    .arg(
-        Arg::with_name("tpu_coalesce_ms")
-            .long("tpu-coalesce-ms")
-            .value_name("MILLISECS")
-            .takes_value(true)
-            .validator(is_parsable::<u64>)
-            .help("Milliseconds to wait in the TPU receiver for packet coalescing."),
     )
     .arg(
         Arg::with_name("tpu_connection_pool_size")
@@ -965,14 +921,6 @@ pub fn add_args<'a>(app: App<'a, 'a>, default_args: &'a DefaultArgs) -> App<'a, 
                  generally produce higher compression ratio at the expense of speed and memory. \
                  See the zstd manpage for more information.",
             ),
-    )
-    .arg(
-        Arg::with_name("max_genesis_archive_unpacked_size")
-            .long("max-genesis-archive-unpacked-size")
-            .value_name("NUMBER")
-            .takes_value(true)
-            .default_value(&default_args.genesis_archive_unpacked_size)
-            .help("maximum total uncompressed file size of downloaded genesis archive"),
     )
     .arg(
         Arg::with_name("wal_recovery_mode")
@@ -1180,6 +1128,15 @@ pub fn add_args<'a>(app: App<'a, 'a>, default_args: &'a DefaultArgs) -> App<'a, 
             .help("Number of bins to divide the accounts index into"),
     )
     .arg(
+        Arg::with_name("accounts_index_initial_accounts_count")
+            .long("accounts-index-initial-accounts-count")
+            .value_name("NUMBER")
+            .validator(is_parsable::<usize>)
+            .takes_value(true)
+            .help("Pre-allocate the accounts index, assuming this many accounts")
+            .hidden(hidden_unless_forced()),
+    )
+    .arg(
         Arg::with_name("accounts_index_path")
             .long("accounts-index-path")
             .value_name("PATH")
@@ -1379,10 +1336,11 @@ pub fn add_args<'a>(app: App<'a, 'a>, default_args: &'a DefaultArgs) -> App<'a, 
                  set,tpu-client-next is used by default.",
             ),
     )
-    .args(&pub_sub_config::args())
+    .args(&pub_sub_config::args(/*test_validator:*/ false))
     .args(&json_rpc_config::args())
     .args(&rpc_bigtable_config::args())
     .args(&send_transaction_config::args())
+    .args(&rpc_bootstrap_config::args())
 }
 
 fn validators_set(
@@ -1427,7 +1385,8 @@ mod tests {
         fn default() -> Self {
             let identity_keypair = Keypair::new();
             let ledger_path = absolute(PathBuf::from("ledger")).unwrap();
-            let logfile = format!("agave-validator-{}.log", identity_keypair.pubkey());
+            let logfile =
+                PathBuf::from(format!("agave-validator-{}.log", identity_keypair.pubkey()));
             let entrypoints = vec![];
             let known_validators = None;
 
@@ -1437,7 +1396,7 @@ mod tests {
             RunArgs {
                 identity_keypair,
                 ledger_path,
-                logfile,
+                logfile: Some(logfile),
                 entrypoints,
                 known_validators,
                 socket_addr_space: SocketAddrSpace::Global,
@@ -1660,9 +1619,10 @@ mod tests {
         // default
         {
             let expected_args = RunArgs {
-                logfile: "agave-validator-".to_string()
-                    + &default_run_args.identity_keypair.pubkey().to_string()
-                    + ".log",
+                logfile: Some(PathBuf::from(format!(
+                    "agave-validator-{}.log",
+                    default_run_args.identity_keypair.pubkey()
+                ))),
                 ..default_run_args.clone()
             };
             verify_args_struct_by_command_run_with_identity_setup(
@@ -1675,7 +1635,7 @@ mod tests {
         // short arg
         {
             let expected_args = RunArgs {
-                logfile: "-".to_string(),
+                logfile: None,
                 ..default_run_args.clone()
             };
             verify_args_struct_by_command_run_with_identity_setup(
@@ -1688,7 +1648,7 @@ mod tests {
         // long arg
         {
             let expected_args = RunArgs {
-                logfile: "custom_log.log".to_string(),
+                logfile: Some(PathBuf::from("custom_log.log")),
                 ..default_run_args.clone()
             };
             verify_args_struct_by_command_run_with_identity_setup(

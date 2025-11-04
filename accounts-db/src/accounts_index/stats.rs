@@ -1,7 +1,8 @@
 use {
-    crate::{
-        accounts_index::{in_mem_accounts_index::InMemAccountsIndex, DiskIndexValue, IndexValue},
+    super::{
         bucket_map_holder::{Age, AtomicAge, BucketMapHolder},
+        in_mem_accounts_index::InMemAccountsIndex,
+        DiskIndexValue, IndexValue,
     },
     solana_clock::Slot,
     solana_time_utils::AtomicInterval,
@@ -15,15 +16,15 @@ use {
 const STATS_INTERVAL_MS: u64 = 10_000;
 
 #[derive(Debug, Default)]
-pub struct BucketMapHeldInMemStats {
+pub struct HeldInMemStats {
     pub ref_count: AtomicU64,
     pub slot_list_len: AtomicU64,
     pub slot_list_cached: AtomicU64,
 }
 
 #[derive(Debug, Default)]
-pub struct BucketMapHolderStats {
-    pub held_in_mem: BucketMapHeldInMemStats,
+pub struct Stats {
+    pub held_in_mem: HeldInMemStats,
     pub get_mem_us: AtomicU64,
     pub gets_from_mem: AtomicU64,
     pub get_missing_us: AtomicU64,
@@ -37,8 +38,6 @@ pub struct BucketMapHolderStats {
     pub load_disk_missing_count: AtomicU64,
     pub load_disk_missing_us: AtomicU64,
     pub updates_in_mem: AtomicU64,
-    pub items: AtomicU64,
-    pub items_us: AtomicU64,
     pub failed_to_evict: AtomicU64,
     pub keys: AtomicU64,
     pub deletes: AtomicU64,
@@ -52,7 +51,6 @@ pub struct BucketMapHolderStats {
     pub flush_entries_updated_on_disk: AtomicU64,
     pub flush_entries_evicted_from_mem: AtomicU64,
     pub active_threads: AtomicU64,
-    pub get_range_us: AtomicU64,
     last_age: AtomicAge,
     last_ages_flushed: AtomicU64,
     pub flush_scan_us: AtomicU64,
@@ -66,11 +64,11 @@ pub struct BucketMapHolderStats {
     pub flush_read_lock_us: AtomicU64,
 }
 
-impl BucketMapHolderStats {
-    pub fn new(bins: usize) -> BucketMapHolderStats {
-        BucketMapHolderStats {
+impl Stats {
+    pub fn new(bins: usize) -> Stats {
+        Stats {
             bins: bins as u64,
-            ..BucketMapHolderStats::default()
+            ..Stats::default()
         }
     }
 
@@ -227,6 +225,12 @@ impl BucketMapHolderStats {
 
         // sum of elapsed time in each thread
         let mut thread_time_elapsed_ms = elapsed_ms * storage.threads as u64;
+        let datapoint_name = if startup || was_startup {
+            thread_time_elapsed_ms *= 2; // more threads are allocated during startup
+            "accounts_index_startup"
+        } else {
+            "accounts_index"
+        };
         if storage.is_disk_index_enabled() {
             if was_startup {
                 // these stats only apply at startup
@@ -265,18 +269,19 @@ impl BucketMapHolderStats {
             // (aka ref count == 1 and slot list len == 1), and the single slot list entry is
             // stored inline in the slot list itself, then when we have larger slot lists,
             // account for them here.
-            let estimate_mem_bytes = count_in_mem
-                * InMemAccountsIndex::<T, U>::approx_size_of_one_entry()
+            let estimate_mem_bytes =
+                // hash map mem usage is based on capacity, and the footprint of a KV-pair
+                // (we ignore other hash map details, such as load factor)
+                capacity_in_mem * InMemAccountsIndex::<T, U>::size_of_uninitialized()
+                // each value in use we assume has a single entry in the slot list
+                + count_in_mem * InMemAccountsIndex::<T, U>::size_of_single_entry()
+                // and for entries held in mem due to ref count or slot list length, assume
+                // conservatively a slot list with two entries
                 + (held_in_mem_ref_count + held_in_mem_slot_list_len) as usize
                     * size_of::<(Slot, T)>() // <-- size of one slot list entry
                     * 2; // <-- and assume there are two entries
             datapoint_info!(
-                if startup || was_startup {
-                    thread_time_elapsed_ms *= 2; // more threads are allocated during startup
-                    "accounts_index_startup"
-                } else {
-                    "accounts_index"
-                },
+                datapoint_name,
                 ("estimate_mem_bytes", estimate_mem_bytes, i64),
                 (
                     "flush_should_evict_us",
@@ -383,11 +388,6 @@ impl BucketMapHolderStats {
                     self.updates_in_mem.swap(0, Ordering::Relaxed),
                     i64
                 ),
-                (
-                    "get_range_us",
-                    self.get_range_us.swap(0, Ordering::Relaxed),
-                    i64
-                ),
                 ("inserts", self.inserts.swap(0, Ordering::Relaxed), i64),
                 ("deletes", self.deletes.swap(0, Ordering::Relaxed), i64),
                 (
@@ -395,7 +395,6 @@ impl BucketMapHolderStats {
                     self.active_threads.load(Ordering::Relaxed),
                     i64
                 ),
-                ("items", self.items.swap(0, Ordering::Relaxed), i64),
                 ("keys", self.keys.swap(0, Ordering::Relaxed), i64),
                 ("ms_per_age", ms_per_age, i64),
                 (
@@ -559,37 +558,21 @@ impl BucketMapHolderStats {
             );
         } else {
             datapoint_info!(
-                if startup || was_startup {
-                    thread_time_elapsed_ms *= 2; // more threads are allocated during startup
-                    "accounts_index_startup"
-                } else {
-                    "accounts_index"
-                },
+                datapoint_name,
                 (
                     "estimate_mem_bytes",
-                    self.count_in_mem.load(Ordering::Relaxed)
-                        * InMemAccountsIndex::<T, U>::approx_size_of_one_entry(),
+                    (
+                        // hash map mem usage is based on capacity, and the footprint of a KV-pair
+                        // (we ignore other hash map details, such as load factor)
+                        capacity_in_mem * InMemAccountsIndex::<T, U>::size_of_uninitialized()
+                        // each value in use we assume has a single entry in the slot list
+                        + count_in_mem * InMemAccountsIndex::<T, U>::size_of_single_entry()
+                    ),
                     i64
                 ),
                 ("count_in_mem", count_in_mem, i64),
                 ("capacity_in_mem", capacity_in_mem, i64),
                 ("count", self.total_count(), i64),
-                (
-                    "bg_waiting_percent",
-                    Self::calc_percent(
-                        self.bg_waiting_us.swap(0, Ordering::Relaxed) / US_PER_MS,
-                        thread_time_elapsed_ms
-                    ),
-                    f64
-                ),
-                (
-                    "bg_throttling_wait_percent",
-                    Self::calc_percent(
-                        self.bg_throttling_wait_us.swap(0, Ordering::Relaxed) / US_PER_MS,
-                        thread_time_elapsed_ms
-                    ),
-                    f64
-                ),
                 (
                     "gets_from_mem",
                     self.gets_from_mem.swap(0, Ordering::Relaxed),
@@ -635,20 +618,8 @@ impl BucketMapHolderStats {
                     self.updates_in_mem.swap(0, Ordering::Relaxed),
                     i64
                 ),
-                (
-                    "get_range_us",
-                    self.get_range_us.swap(0, Ordering::Relaxed),
-                    i64
-                ),
                 ("inserts", self.inserts.swap(0, Ordering::Relaxed), i64),
                 ("deletes", self.deletes.swap(0, Ordering::Relaxed), i64),
-                (
-                    "active_threads",
-                    self.active_threads.load(Ordering::Relaxed),
-                    i64
-                ),
-                ("items", self.items.swap(0, Ordering::Relaxed), i64),
-                ("items_us", self.items_us.swap(0, Ordering::Relaxed), i64),
                 ("keys", self.keys.swap(0, Ordering::Relaxed), i64),
             );
         }

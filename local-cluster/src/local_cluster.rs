@@ -5,7 +5,7 @@ use {
         integration_tests::DEFAULT_NODE_STAKE,
         validator_configs::*,
     },
-    agave_snapshots::snapshot_config::SnapshotConfig,
+    agave_snapshots::{paths::BANK_SNAPSHOTS_DIR, snapshot_config::SnapshotConfig},
     itertools::izip,
     log::*,
     solana_account::{Account, AccountSharedData, ReadableAccount},
@@ -35,19 +35,15 @@ use {
     solana_pubkey::Pubkey,
     solana_rent::Rent,
     solana_rpc_client::rpc_client::RpcClient,
-    solana_runtime::{
-        genesis_utils::{
-            create_genesis_config_with_vote_accounts_and_cluster_type, GenesisConfigInfo,
-            ValidatorVoteKeypairs,
-        },
-        snapshot_utils::BANK_SNAPSHOTS_DIR,
+    solana_runtime::genesis_utils::{
+        create_genesis_config_with_vote_accounts_and_cluster_type, GenesisConfigInfo,
+        ValidatorVoteKeypairs,
     },
     solana_signer::{signers::Signers, Signer},
     solana_stake_interface::{
         instruction as stake_instruction,
-        state::{Authorized, Lockup},
+        state::{Authorized, Lockup, StakeStateV2},
     },
-    solana_stake_program::stake_state,
     solana_streamer::{socket::SocketAddrSpace, streamer::StakedNodes},
     solana_system_transaction as system_transaction,
     solana_tpu_client::tpu_client::{
@@ -1109,7 +1105,10 @@ impl LocalCluster {
                 match (stake_account.value, vote_account.value) {
                     (Some(stake_account), Some(vote_account)) => {
                         match (
-                            stake_state::stake_from(&stake_account),
+                            stake_account
+                                .deserialize_data::<StakeStateV2>()
+                                .ok()
+                                .and_then(|state| state.stake()),
                             VoteStateV4::deserialize(vote_account.data(), &vote_account_pubkey)
                                 .ok(),
                         ) {
