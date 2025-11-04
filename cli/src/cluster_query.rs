@@ -27,7 +27,6 @@ use {
         },
         *,
     },
-    solana_client::nonblocking::tpu_client::TpuClient,
     solana_clock::{self as clock, Clock, Epoch, Slot},
     solana_commitment_config::CommitmentConfig,
     solana_hash::Hash,
@@ -57,6 +56,7 @@ use {
     solana_slot_history::{self as slot_history, SlotHistory},
     solana_stake_interface::{self as stake, state::StakeStateV2},
     solana_system_interface::{instruction as system_instruction, MAX_PERMITTED_DATA_LENGTH},
+    solana_tpu_client::nonblocking::tpu_client::TpuClient,
     solana_transaction::Transaction,
     solana_transaction_status::{
         EncodableWithMeta, EncodedConfirmedTransactionWithStatusMeta, UiTransactionEncoding,

@@ -18,9 +18,11 @@ use {
 };
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
-#[test_case(None; "base")]
-#[test_case(Some(1_000_000); "with_compute_unit_price")]
-async fn test_ping(compute_unit_price: Option<u64>) {
+#[test_case(false, None; "rpc_base")]
+#[test_case(false, Some(1_000_000); "rpc_with_compute_unit_price")]
+#[test_case(true, None; "tpu_base")]
+#[test_case(true, Some(1_000_000); "tpu_with_compute_unit_price")]
+async fn test_ping(use_tpu_client: bool, compute_unit_price: Option<u64>) {
     agave_logger::setup();
     let fee = FeeStructure::default().get_max_fee(1, 0);
     let mint_keypair = Keypair::new();
@@ -42,7 +44,9 @@ async fn test_ping(compute_unit_price: Option<u64>) {
 
     let mut config = CliConfig::recent_for_tests();
     config.json_rpc_url = test_validator.rpc_url();
+    config.websocket_url = test_validator.rpc_pubsub_url();
     config.signers = vec![&default_signer];
+    config.use_tpu_client = use_tpu_client;
 
     request_and_confirm_airdrop(&rpc_client, &config, &signer_pubkey, LAMPORTS_PER_SOL)
         .await
