@@ -944,10 +944,12 @@ pub async fn process_command(config: &CliConfig<'_>) -> ProcessResult {
             compute_unit_price,
         } => {
             let maybe_tpu_client = if config.use_tpu_client {
-                use solana_connection_cache::connection_cache::NewConnectionConfig;
-                use solana_quic_client::{QuicConfig, QuicConnectionManager};
-                use solana_tpu_client::{
-                    nonblocking::tpu_client::TpuClient, tpu_client::TpuClientConfig,
+                use {
+                    solana_connection_cache::connection_cache::NewConnectionConfig,
+                    solana_quic_client::{QuicConfig, QuicConnectionManager},
+                    solana_tpu_client::{
+                        nonblocking::tpu_client::TpuClient, tpu_client::TpuClientConfig,
+                    },
                 };
 
                 let quic_config = QuicConfig::new().unwrap();

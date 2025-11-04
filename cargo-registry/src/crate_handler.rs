@@ -1,3 +1,5 @@
+#[allow(deprecated)]
+use solana_cli::program_v4::{process_deploy_program_sync, process_dump_sync};
 use {
     crate::{
         client::Client,
@@ -28,9 +30,6 @@ use {
     tar::{Archive, Builder, HeaderMode},
     tempfile::{tempdir, TempDir},
 };
-
-#[allow(deprecated)]
-use solana_cli::program_v4::{process_deploy_program_sync, process_dump_sync};
 
 const APPEND_CRATE_TO_ELF: bool = true;
 
