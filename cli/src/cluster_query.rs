@@ -1499,7 +1499,6 @@ pub async fn process_get_transaction_count(
 }
 
 pub async fn process_ping(
-    rpc_client: &RpcClient,
     tpu_client: Option<&TpuClient<QuicPool, QuicConnectionManager, QuicConfig>>,
     config: &CliConfig<'_>,
     interval: &Duration,
@@ -1508,6 +1507,7 @@ pub async fn process_ping(
     fixed_blockhash: &Option<Hash>,
     print_timestamp: bool,
     compute_unit_price: Option<u64>,
+    rpc_client: &RpcClient,
 ) -> ProcessResult {
     let (signal_sender, signal_receiver) = unbounded();
     let handler = move || {

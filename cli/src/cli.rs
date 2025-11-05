@@ -976,7 +976,6 @@ pub async fn process_command(config: &CliConfig<'_>) -> ProcessResult {
                 None
             };
             process_ping(
-                &rpc_client,
                 maybe_tpu_client.as_ref(),
                 config,
                 interval,
@@ -985,6 +984,7 @@ pub async fn process_command(config: &CliConfig<'_>) -> ProcessResult {
                 blockhash,
                 *print_timestamp,
                 *compute_unit_price,
+                &rpc_client,
             )
             .await
         }
