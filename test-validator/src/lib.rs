@@ -728,10 +728,9 @@ impl TestValidatorGenesis {
                     .iter()
                     .map(|p| &p.program_id)
                     .collect();
-                runtime.block_on(test_validator.wait_for_upgradeable_programs_deployed(
-                    &upgradeable_program_ids,
-                    &mint_keypair,
-                ));
+                runtime.block_on(
+                    test_validator.wait_for_upgradeable_programs_deployed(&upgradeable_program_ids),
+                );
             })
             .map(|test_validator| (test_validator, mint_keypair))
             .unwrap_or_else(|err| panic!("Test validator failed to start: {err}"))
@@ -746,6 +745,19 @@ impl TestValidatorGenesis {
     ) -> Result<TestValidator, Box<dyn std::error::Error>> {
         let test_validator = TestValidator::start(mint_address, self, socket_addr_space, None)?;
         test_validator.wait_for_nonzero_fees().await;
+
+        // Wait for upgradeable programs to be deployed
+        if !self.upgradeable_programs.is_empty() {
+            let upgradeable_program_ids: Vec<&Pubkey> = self
+                .upgradeable_programs
+                .iter()
+                .map(|p| &p.program_id)
+                .collect();
+            test_validator
+                .wait_for_upgradeable_programs_deployed(&upgradeable_program_ids)
+                .await;
+        }
+
         Ok(test_validator)
     }
 
@@ -761,21 +773,11 @@ impl TestValidatorGenesis {
         socket_addr_space: SocketAddrSpace,
     ) -> (TestValidator, Keypair) {
         let mint_keypair = Keypair::new();
-        match TestValidator::start(mint_keypair.pubkey(), self, socket_addr_space, None) {
-            Ok(test_validator) => {
-                test_validator.wait_for_nonzero_fees().await;
-                let upgradeable_program_ids: Vec<&Pubkey> = self
-                    .upgradeable_programs
-                    .iter()
-                    .map(|p| &p.program_id)
-                    .collect();
-                test_validator
-                    .wait_for_upgradeable_programs_deployed(&upgradeable_program_ids, &mint_keypair)
-                    .await;
-                (test_validator, mint_keypair)
-            }
-            Err(err) => panic!("Test validator failed to start: {err}"),
-        }
+        let test_validator = self
+            .start_async_with_mint_address(mint_keypair.pubkey(), socket_addr_space)
+            .await
+            .unwrap_or_else(|err| panic!("Test validator failed to start: {err}"));
+        (test_validator, mint_keypair)
     }
 }
 
@@ -1352,15 +1354,18 @@ impl TestValidator {
 
     /// programs added to genesis ain't immediately usable. Actively check "Program
     /// is not deployed" error for their availibility.
-    async fn wait_for_upgradeable_programs_deployed(
-        &self,
-        upgradeable_programs: &[&Pubkey],
-        payer: &Keypair,
-    ) {
+    async fn wait_for_upgradeable_programs_deployed(&self, upgradeable_programs: &[&Pubkey]) {
+        if upgradeable_programs.is_empty() {
+            return;
+        }
+
         let rpc_client = nonblocking::rpc_client::RpcClient::new_with_commitment(
             self.rpc_url.clone(),
             CommitmentConfig::processed(),
         );
+
+        // Create a temporary keypair for simulation (doesn't need to be funded)
+        let simulation_keypair = Keypair::new();
 
         let mut deployed = vec![false; upgradeable_programs.len()];
         const MAX_ATTEMPTS: u64 = 10;
@@ -1378,21 +1383,29 @@ impl TestValidator {
                         accounts: vec![],
                         data: vec![],
                     }],
-                    Some(&payer.pubkey()),
-                    &[&payer],
+                    Some(&simulation_keypair.pubkey()),
+                    &[&simulation_keypair],
                     blockhash,
                 );
-                match rpc_client.send_transaction(&transaction).await {
-                    Ok(_) => *is_deployed = true,
-                    Err(e) => {
-                        if format!("{e:?}").contains("Program is not deployed") {
-                            debug!("{program_id:?} - not deployed");
+                match rpc_client.simulate_transaction(&transaction).await {
+                    Ok(response) => {
+                        if let Some(err) = response.value.err {
+                            if format!("{err:?}").contains("ProgramAccountNotFound") {
+                                debug!("{program_id:?} - not deployed");
+                            } else {
+                                // Assuming all other errors could only occur *after*
+                                // program is deployed for usability.
+                                *is_deployed = true;
+                                debug!("{program_id:?} - deployed (got error: {err:?})");
+                            }
                         } else {
-                            // Assuming all other other errors could only occur *after*
-                            // program is deployed for usability.
+                            // No error means program executed successfully
                             *is_deployed = true;
-                            debug!("{program_id:?} - Unexpected error: {e:?}");
+                            debug!("{program_id:?} - deployed and ready");
                         }
+                    }
+                    Err(e) => {
+                        debug!("Failed to simulate transaction: {e:?}");
                     }
                 }
             }
