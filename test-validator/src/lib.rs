@@ -1355,17 +1355,12 @@ impl TestValidator {
     /// programs added to genesis ain't immediately usable. Actively check "Program
     /// is not deployed" error for their availibility.
     async fn wait_for_upgradeable_programs_deployed(&self, upgradeable_programs: &[&Pubkey]) {
-        if upgradeable_programs.is_empty() {
-            return;
-        }
-
         let rpc_client = nonblocking::rpc_client::RpcClient::new_with_commitment(
             self.rpc_url.clone(),
             CommitmentConfig::processed(),
         );
 
         let simulation_keypair = Keypair::new();
-
         let mut deployed = vec![false; upgradeable_programs.len()];
         const MAX_ATTEMPTS: u64 = 10;
 
