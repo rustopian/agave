@@ -1888,7 +1888,6 @@ mod tests {
     use {
         super::*,
         serde_json::json,
-        solana_client::nonblocking::blockhash_query::Source,
         solana_keypair::{keypair_from_seed, read_keypair_file, write_keypair_file, Keypair},
         solana_presigner::Presigner,
         solana_pubkey::Pubkey,
@@ -1897,6 +1896,7 @@ mod tests {
             request::RpcRequest,
             response::{Response, RpcResponseContext},
         },
+        solana_rpc_client_nonce_utils::nonblocking::blockhash_query::Source,
         solana_sdk_ids::{stake, system_program},
         solana_transaction_error::TransactionError,
         solana_transaction_status::TransactionConfirmationStatus,

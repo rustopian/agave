@@ -1617,10 +1617,10 @@ mod tests {
     use {
         super::*,
         crate::{clap_app::get_clap_app, cli::parse_command},
-        solana_client::nonblocking::blockhash_query::Source,
         solana_hash::Hash,
         solana_keypair::{read_keypair_file, write_keypair, Keypair},
         solana_presigner::Presigner,
+        solana_rpc_client_nonce_utils::nonblocking::blockhash_query::Source,
         solana_signer::Signer,
         tempfile::NamedTempFile,
     };

@@ -36,7 +36,7 @@ use {
     },
     solana_client::{
         connection_cache::ConnectionCache,
-        nonblocking::{rpc_client::RpcClient, tpu_client::TpuClient},
+        nonblocking::tpu_client::TpuClient,
         send_and_confirm_transactions_in_parallel::{
             send_and_confirm_transactions_in_parallel_v2, SendAndConfirmConfigV2,
         },
@@ -56,6 +56,7 @@ use {
     },
     solana_pubkey::Pubkey,
     solana_remote_wallet::remote_wallet::RemoteWalletManager,
+    solana_rpc_client::nonblocking::rpc_client::RpcClient,
     solana_rpc_client_api::{
         client_error::ErrorKind as ClientErrorKind,
         config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
@@ -3337,7 +3338,7 @@ async fn send_deploy_messages(
                     let tpu_client_fut = TpuClient::new_with_connection_cache(
                         rpc_client.clone(),
                         config.websocket_url.as_str(),
-                        solana_client::tpu_client::TpuClientConfig::default(),
+                        TpuClientConfig::default(),
                         cache,
                     );
                     let tpu_client = if use_rpc {

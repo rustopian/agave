@@ -1364,7 +1364,6 @@ impl TestValidator {
             CommitmentConfig::processed(),
         );
 
-        // Create a temporary keypair for simulation (doesn't need to be funded)
         let simulation_keypair = Keypair::new();
 
         let mut deployed = vec![false; upgradeable_programs.len()];
@@ -1388,24 +1387,16 @@ impl TestValidator {
                     blockhash,
                 );
                 match rpc_client.simulate_transaction(&transaction).await {
-                    Ok(response) => {
-                        if let Some(err) = response.value.err {
-                            if format!("{err:?}").contains("ProgramAccountNotFound") {
-                                debug!("{program_id:?} - not deployed");
-                            } else {
-                                // Assuming all other errors could only occur *after*
-                                // program is deployed for usability.
-                                *is_deployed = true;
-                                debug!("{program_id:?} - deployed (got error: {err:?})");
-                            }
-                        } else {
-                            // No error means program executed successfully
-                            *is_deployed = true;
-                            debug!("{program_id:?} - deployed and ready");
-                        }
-                    }
+                    Ok(_) => *is_deployed = true,
                     Err(e) => {
-                        debug!("Failed to simulate transaction: {e:?}");
+                        if format!("{e:?}").contains("Program is not deployed") {
+                            debug!("{program_id:?} - not deployed");
+                        } else {
+                            // Assuming all other errors could only occur *after*
+                            // program is deployed for usability.
+                            *is_deployed = true;
+                            debug!("{program_id:?} - Unexpected error: {e:?}");
+                        }
                     }
                 }
             }

@@ -75,10 +75,6 @@ fn setup_rpc_client(config: &mut CliConfig) -> Arc<RpcClient> {
     rpc_client
 }
 
-// TODO: `track_caller`` on an async function is a noop; Enable feature when implemented.
-//        See https://github.com/rust-lang/rust/issues/110011
-#[allow(ungated_async_fn_track_caller)]
-#[track_caller]
 async fn expect_command_failure(
     config: &CliConfig<'_>,
     should_fail_because: &str,
@@ -95,10 +91,6 @@ async fn expect_command_failure(
     );
 }
 
-// TODO: `track_caller`` on an async function is a noop; Enable feature when implemented.
-//        See https://github.com/rust-lang/rust/issues/110011
-#[allow(ungated_async_fn_track_caller)]
-#[track_caller]
 async fn expect_account_absent(rpc_client: &RpcClient, pubkey: Pubkey, absent_because: &str) {
     let error_actual = rpc_client
         .get_account(&pubkey)
