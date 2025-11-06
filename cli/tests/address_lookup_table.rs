@@ -17,7 +17,7 @@ use {
     std::str::FromStr,
 };
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_cli_create_extend_and_freeze_address_lookup_table() {
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();
@@ -135,7 +135,7 @@ async fn test_cli_create_extend_and_freeze_address_lookup_table() {
     }
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+#[tokio::test(flavor = "multi_thread")]
 async fn test_cli_create_and_deactivate_address_lookup_table() {
     let mint_keypair = Keypair::new();
     let mint_pubkey = mint_keypair.pubkey();

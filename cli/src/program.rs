@@ -4640,7 +4640,7 @@ mod tests {
         );
     }
 
-    #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+    #[tokio::test]
     async fn test_cli_keypair_file() {
         agave_logger::setup();
 

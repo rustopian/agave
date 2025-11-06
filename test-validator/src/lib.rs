@@ -136,7 +136,6 @@ pub struct TestValidatorGenesis {
     pub max_ledger_shreds: Option<u64>,
     pub max_genesis_archive_unpacked_size: Option<u64>,
     pub geyser_plugin_config_files: Option<Vec<PathBuf>>,
-    pub enable_scheduler_bindings: bool,
     deactivate_feature_set: HashSet<Pubkey>,
     compute_unit_limit: Option<u64>,
     pub log_messages_bytes_limit: Option<usize>,
@@ -172,7 +171,6 @@ impl Default for TestValidatorGenesis {
             max_ledger_shreds: Option::<u64>::default(),
             max_genesis_archive_unpacked_size: Option::<u64>::default(),
             geyser_plugin_config_files: Option::<Vec<PathBuf>>::default(),
-            enable_scheduler_bindings: false,
             deactivate_feature_set,
             compute_unit_limit: Option::<u64>::default(),
             log_messages_bytes_limit: Option::<usize>::default(),
@@ -714,12 +712,10 @@ impl TestValidatorGenesis {
         &self,
         socket_addr_space: SocketAddrSpace,
     ) -> (TestValidator, Keypair) {
-        // Using multi_thread to avoid deadlocks when client spawns tasks.
         let mint_keypair = Keypair::new();
         self.start_with_mint_address(mint_keypair.pubkey(), socket_addr_space)
             .inspect(|test_validator| {
-                let runtime = tokio::runtime::Builder::new_multi_thread()
-                    .worker_threads(2)
+                let runtime = tokio::runtime::Builder::new_current_thread()
                     .enable_io()
                     .enable_time()
                     .build()
@@ -802,8 +798,7 @@ pub struct TestValidator {
 impl TestValidator {
     /// Helper to block on async waiting logic
     fn block_on_wait(&self, wait_for_fees: bool) {
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(2)
+        let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_io()
             .enable_time()
             .build()
@@ -1236,7 +1231,6 @@ impl TestValidator {
             staked_nodes_overrides: config.staked_nodes_overrides.clone(),
             accounts_db_config,
             runtime_config,
-            enable_scheduler_bindings: config.enable_scheduler_bindings,
             ..ValidatorConfig::default_for_test()
         };
         if let Some(ref tower_storage) = config.tower_storage {
