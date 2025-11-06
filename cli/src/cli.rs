@@ -14,10 +14,12 @@ use {
     },
     solana_clock::{Epoch, Slot},
     solana_commitment_config::CommitmentConfig,
+    solana_connection_cache::connection_cache::NewConnectionConfig,
     solana_hash::Hash,
     solana_instruction::error::InstructionError,
     solana_offchain_message::OffchainMessage,
     solana_pubkey::Pubkey,
+    solana_quic_client::{QuicConfig, QuicConnectionManager},
     solana_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_rpc_client::nonblocking::rpc_client::RpcClient,
     solana_rpc_client_api::{
@@ -28,7 +30,10 @@ use {
     solana_signature::Signature,
     solana_signer::{Signer, SignerError},
     solana_stake_interface::{instruction::LockupArgs, state::Lockup},
-    solana_tpu_client::tpu_client::DEFAULT_TPU_ENABLE_UDP,
+    solana_tpu_client::{
+        nonblocking::tpu_client::TpuClient,
+        tpu_client::{TpuClientConfig, DEFAULT_TPU_ENABLE_UDP},
+    },
     solana_transaction::versioned::VersionedTransaction,
     solana_transaction_error::TransactionError,
     solana_vote_program::vote_state::VoteAuthorize,
@@ -944,14 +949,6 @@ pub async fn process_command(config: &CliConfig<'_>) -> ProcessResult {
             compute_unit_price,
         } => {
             let maybe_tpu_client = if config.use_tpu_client {
-                use {
-                    solana_connection_cache::connection_cache::NewConnectionConfig,
-                    solana_quic_client::{QuicConfig, QuicConnectionManager},
-                    solana_tpu_client::{
-                        nonblocking::tpu_client::TpuClient, tpu_client::TpuClientConfig,
-                    },
-                };
-
                 let quic_config = QuicConfig::new().unwrap();
                 let connection_manager =
                     QuicConnectionManager::new_with_connection_config(quic_config);
