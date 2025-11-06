@@ -23,6 +23,9 @@ use {
     solana_cli_output::{
         return_signers_with_config, CliProgramId, CliProgramV4, CliProgramsV4, ReturnSignersConfig,
     },
+    solana_client::send_and_confirm_transactions_in_parallel::{
+        send_and_confirm_transactions_in_parallel_v2, SendAndConfirmConfigV2,
+    },
     solana_connection_cache::connection_cache::{
         ConnectionCache as BackendConnectionCache, NewConnectionConfig,
     },
@@ -1326,6 +1329,7 @@ async fn send_messages(
     if !write_messages.is_empty() {
         let transaction_errors = if config.use_quic {
             // Create QUIC connection cache
+            use solana_client::nonblocking::tpu_client::TpuClient as ClientTpuClient; // type expected by `send_and_confirm_transactions_in_parallel_v2`
             let quic_config = QuicConfig::new().unwrap();
             let connection_manager = QuicConnectionManager::new_with_connection_config(quic_config);
             let connection_cache = Arc::new(
@@ -1337,16 +1341,31 @@ async fn send_messages(
                 .unwrap(),
             );
 
-            TpuClient::new_with_connection_cache(
+            let tpu_client = if additional_cli_config.use_rpc {
+                None
+            } else {
+                Some(
+                    ClientTpuClient::new_with_connection_cache(
+                        rpc_client.clone(),
+                        &config.websocket_url,
+                        TpuClientConfig::default(),
+                        connection_cache,
+                    )
+                    .await
+                    .expect("Should return a valid tpu client"),
+                )
+            };
+
+            send_and_confirm_transactions_in_parallel_v2(
                 rpc_client.clone(),
-                &config.websocket_url,
-                TpuClientConfig::default(),
-                connection_cache,
-            )
-            .await?
-            .send_and_confirm_messages_with_spinner(
+                tpu_client,
                 &write_messages,
                 &[config.signers[0], config.signers[*auth_signer_index]],
+                SendAndConfirmConfigV2 {
+                    resign_txs_count: Some(5),
+                    with_spinner: true,
+                    rpc_send_transaction_config: config.send_transaction_config,
+                },
             )
             .await
         } else {

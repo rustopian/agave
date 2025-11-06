@@ -60,7 +60,7 @@ use {
     solana_signer::Signer,
     solana_streamer::{quic::DEFAULT_QUIC_ENDPOINTS, socket::SocketAddrSpace},
     solana_tpu_client::tpu_client::DEFAULT_TPU_ENABLE_UDP,
-    solana_transaction::Transaction,
+    solana_transaction::{Transaction, TransactionError},
     solana_validator_exit::Exit,
     std::{
         collections::{HashMap, HashSet},
@@ -728,9 +728,12 @@ impl TestValidatorGenesis {
                     .iter()
                     .map(|p| &p.program_id)
                     .collect();
-                runtime.block_on(
-                    test_validator.wait_for_upgradeable_programs_deployed(&upgradeable_program_ids),
-                );
+                runtime
+                    .block_on(test_validator.wait_for_upgradeable_programs_deployed(
+                        &upgradeable_program_ids,
+                        &mint_keypair,
+                    ))
+                    .expect("Failed to wait for programs to be deployed");
             })
             .map(|test_validator| (test_validator, mint_keypair))
             .unwrap_or_else(|err| panic!("Test validator failed to start: {err}"))
@@ -740,10 +743,11 @@ impl TestValidatorGenesis {
     /// created at genesis (async version).
     pub async fn start_async_with_mint_address(
         &self,
-        mint_address: Pubkey,
+        mint_keypair: &Keypair,
         socket_addr_space: SocketAddrSpace,
     ) -> Result<TestValidator, Box<dyn std::error::Error>> {
-        let test_validator = TestValidator::start(mint_address, self, socket_addr_space, None)?;
+        let test_validator =
+            TestValidator::start(mint_keypair.pubkey(), self, socket_addr_space, None)?;
         test_validator.wait_for_nonzero_fees().await;
 
         // Wait for upgradeable programs to be deployed
@@ -754,8 +758,9 @@ impl TestValidatorGenesis {
                 .map(|p| &p.program_id)
                 .collect();
             test_validator
-                .wait_for_upgradeable_programs_deployed(&upgradeable_program_ids)
-                .await;
+                .wait_for_upgradeable_programs_deployed(&upgradeable_program_ids, mint_keypair)
+                .await
+                .map_err(|e| format!("Failed to wait for programs: {e:?}"))?;
         }
 
         Ok(test_validator)
@@ -774,7 +779,7 @@ impl TestValidatorGenesis {
     ) -> (TestValidator, Keypair) {
         let mint_keypair = Keypair::new();
         let test_validator = self
-            .start_async_with_mint_address(mint_keypair.pubkey(), socket_addr_space)
+            .start_async_with_mint_address(&mint_keypair, socket_addr_space)
             .await
             .unwrap_or_else(|err| panic!("Test validator failed to start: {err}"));
         (test_validator, mint_keypair)
@@ -1354,13 +1359,19 @@ impl TestValidator {
 
     /// programs added to genesis ain't immediately usable. Actively check "Program
     /// is not deployed" error for their availibility.
-    async fn wait_for_upgradeable_programs_deployed(&self, upgradeable_programs: &[&Pubkey]) {
+    ///
+    /// Returns `TransactionError::AccountNotFound` if the payer account is not funded.
+    /// The caller is responsible for ensuring the payer account has sufficient funds.
+    async fn wait_for_upgradeable_programs_deployed(
+        &self,
+        upgradeable_programs: &[&Pubkey],
+        payer: &Keypair,
+    ) -> Result<(), TransactionError> {
         let rpc_client = nonblocking::rpc_client::RpcClient::new_with_commitment(
             self.rpc_url.clone(),
             CommitmentConfig::processed(),
         );
 
-        let simulation_keypair = Keypair::new();
         let mut deployed = vec![false; upgradeable_programs.len()];
         const MAX_ATTEMPTS: u64 = 10;
 
@@ -1377,26 +1388,36 @@ impl TestValidator {
                         accounts: vec![],
                         data: vec![],
                     }],
-                    Some(&simulation_keypair.pubkey()),
-                    &[&simulation_keypair],
+                    Some(&payer.pubkey()),
+                    &[&payer],
                     blockhash,
                 );
                 match rpc_client.simulate_transaction(&transaction).await {
-                    Ok(_) => *is_deployed = true,
-                    Err(e) => {
-                        if format!("{e:?}").contains("Program is not deployed") {
-                            debug!("{program_id:?} - not deployed");
+                    Ok(response) => {
+                        if let Some(e) = response.value.err {
+                            let err_string = format!("{e:?}");
+                            if err_string.contains("Program is not deployed") {
+                                debug!("{program_id:?} - not deployed");
+                            } else if err_string.contains("AccountNotFound") {
+                                // Payer account not funded - this is a caller error
+                                return Err(TransactionError::AccountNotFound);
+                            } else {
+                                // Assuming all other errors could only occur *after*
+                                // program is deployed for usability
+                                *is_deployed = true;
+                                debug!("{program_id:?} - Unexpected error: {e:?}");
+                            }
                         } else {
-                            // Assuming all other errors could only occur *after*
-                            // program is deployed for usability.
                             *is_deployed = true;
-                            debug!("{program_id:?} - Unexpected error: {e:?}");
                         }
+                    }
+                    Err(e) => {
+                        debug!("Failed to simulate transaction: {e:?}");
                     }
                 }
             }
             if deployed.iter().all(|&deployed| deployed) {
-                return;
+                return Ok(());
             }
 
             println!("Waiting for programs to be fully deployed {attempt} ...");
@@ -1674,5 +1695,26 @@ mod test {
         let account = fetched_programs[3].as_ref().unwrap();
         assert_eq!(account.owner, solana_sdk_ids::bpf_loader_upgradeable::id());
         assert!(account.executable);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+    async fn test_wait_for_program_with_unfunded_payer() {
+        let program_id = Pubkey::new_unique();
+        let (test_validator, _mint_keypair) = TestValidatorGenesis::default()
+            .add_program("../programs/bpf-loader-tests/noop", program_id)
+            .start_async()
+            .await;
+
+        // Create an unfunded payer keypair
+        let unfunded_payer = Keypair::new();
+
+        // Call wait_for_upgradeable_programs_deployed with unfunded payer
+        let result = test_validator
+            .wait_for_upgradeable_programs_deployed(&[&program_id], &unfunded_payer)
+            .await;
+
+        // Verify it returns AccountNotFound error
+        assert!(result.is_err());
+        assert!(matches!(result, Err(TransactionError::AccountNotFound)));
     }
 }

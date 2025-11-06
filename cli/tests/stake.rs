@@ -37,9 +37,8 @@ use {
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn test_stake_delegation_force() {
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
     let authorized_withdrawer = Keypair::new().pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let slots_per_epoch = 32;
     let test_validator = TestValidatorGenesis::default()
         .fee_rate_governor(FeeRateGovernor::new(0, 0))
@@ -55,7 +54,7 @@ async fn test_stake_delegation_force() {
         ))
         .faucet_addr(Some(faucet_addr))
         .warp_slot(DELINQUENT_VALIDATOR_SLOT_DISTANCE * 2) // get out in front of the cli voter delinquency check
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 

@@ -49,7 +49,7 @@ use {
     test_case::test_case,
 };
 
-fn test_validator_genesis(mint_keypair: Keypair) -> TestValidatorGenesis {
+fn test_validator_genesis(mint_keypair: &Keypair) -> TestValidatorGenesis {
     let mut genesis = TestValidatorGenesis::default();
     genesis
         .fee_rate_governor(FeeRateGovernor::new(0, 0))
@@ -59,7 +59,7 @@ fn test_validator_genesis(mint_keypair: Keypair) -> TestValidatorGenesis {
             ..Rent::default()
         })
         .faucet_addr(Some(run_local_faucet_with_unique_port_for_tests(
-            mint_keypair,
+            mint_keypair.insecure_clone(),
         )));
     genesis
 }
@@ -115,9 +115,8 @@ async fn test_cli_program_deploy_non_upgradeable() {
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -326,9 +325,8 @@ async fn test_cli_program_deploy_no_authority() {
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -433,8 +431,7 @@ async fn test_cli_program_deploy_feature(enable_feature: bool, skip_preflight: b
     program_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let mut test_validator_builder = test_validator_genesis(mint_keypair);
+    let mut test_validator_builder = test_validator_genesis(&mint_keypair);
 
     // Deactivate the enable alt bn128 syscall and try to submit a program with that syscall
     if !enable_feature {
@@ -442,7 +439,7 @@ async fn test_cli_program_deploy_feature(enable_feature: bool, skip_preflight: b
     }
 
     let test_validator = test_validator_builder
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -563,8 +560,7 @@ async fn test_cli_program_upgrade_with_feature(enable_feature: bool) {
     syscall_program_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let mut test_validator_builder = test_validator_genesis(mint_keypair);
+    let mut test_validator_builder = test_validator_genesis(&mint_keypair);
 
     // Deactivate the enable alt bn128 syscall and try to submit a program with that syscall
     if !enable_feature {
@@ -572,7 +568,7 @@ async fn test_cli_program_upgrade_with_feature(enable_feature: bool) {
     }
 
     let test_validator = test_validator_builder
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -726,9 +722,8 @@ async fn test_cli_program_deploy_with_authority() {
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -1135,9 +1130,8 @@ async fn test_cli_program_upgrade_auto_extend(skip_preflight: bool) {
     noop_large_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -1306,9 +1300,8 @@ async fn test_cli_program_close_program() {
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -1429,9 +1422,8 @@ async fn test_cli_program_extend_program() {
     noop_large_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -1608,9 +1600,8 @@ async fn test_cli_program_migrate_program() {
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -1695,9 +1686,8 @@ async fn test_cli_program_write_buffer() {
     noop_large_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -2094,8 +2084,7 @@ async fn test_cli_program_write_buffer_feature(enable_feature: bool) {
     program_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let mut test_validator_builder = test_validator_genesis(mint_keypair);
+    let mut test_validator_builder = test_validator_genesis(&mint_keypair);
 
     // Deactivate the enable alt bn128 syscall and try to submit a program with that syscall
     if !enable_feature {
@@ -2103,7 +2092,7 @@ async fn test_cli_program_write_buffer_feature(enable_feature: bool) {
     }
 
     let test_validator = test_validator_builder
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -2191,9 +2180,8 @@ async fn test_cli_program_set_buffer_authority() {
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -2374,9 +2362,8 @@ async fn test_cli_program_mismatch_buffer_authority() {
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -2506,9 +2493,8 @@ async fn test_cli_program_deploy_with_offline_signing(use_offline_signer_as_fee_
     noop_large_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -2701,9 +2687,8 @@ async fn test_cli_program_show() {
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -2899,9 +2884,8 @@ async fn test_cli_program_dump() {
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -3039,8 +3023,7 @@ async fn test_cli_program_deploy_with_args(compute_unit_price: Option<u64>, use_
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidatorGenesis::default()
         .fee_rate_governor(FeeRateGovernor::new(0, 0))
         .rent(Rent {
@@ -3053,7 +3036,7 @@ async fn test_cli_program_deploy_with_args(compute_unit_price: Option<u64>, use_
             faucet_addr: Some(faucet_addr),
             ..JsonRpcConfig::default_for_test()
         })
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
@@ -3223,9 +3206,8 @@ async fn test_cli_program_v4() {
     noop_path.set_extension("so");
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let test_validator = test_validator_genesis(mint_keypair)
-        .start_async_with_mint_address(mint_pubkey, SocketAddrSpace::Unspecified)
+    let test_validator = test_validator_genesis(&mint_keypair)
+        .start_async_with_mint_address(&mint_keypair, SocketAddrSpace::Unspecified)
         .await
         .expect("validator start failed");
 
