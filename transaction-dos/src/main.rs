@@ -705,7 +705,7 @@ pub mod test {
         assert!(size < PACKET_DATA_SIZE as u64);
     }
 
-    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    #[tokio::test(flavor = "multi_thread")]
     #[ignore]
     async fn test_transaction_dos() {
         agave_logger::setup();
