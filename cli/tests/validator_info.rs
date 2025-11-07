@@ -8,7 +8,6 @@ use {
     solana_faucet::faucet::run_local_faucet_with_unique_port_for_tests,
     solana_keypair::{keypair_from_seed, Keypair},
     solana_rpc_client::nonblocking::rpc_client::RpcClient,
-    solana_signer::Signer,
     solana_streamer::socket::SocketAddrSpace,
     solana_test_validator::TestValidator,
     test_case::test_case,
@@ -21,10 +20,9 @@ async fn test_publish(compute_unit_price: Option<u64>) {
     agave_logger::setup();
 
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_no_fees(
-        mint_pubkey,
+        &mint_keypair,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,
     )

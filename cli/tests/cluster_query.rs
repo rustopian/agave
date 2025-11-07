@@ -26,10 +26,9 @@ async fn test_ping(use_tpu_client: bool, compute_unit_price: Option<u64>) {
     agave_logger::setup();
     let fee = FeeStructure::default().get_max_fee(1, 0);
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_custom_fees(
-        mint_pubkey,
+        &mint_keypair,
         fee,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,

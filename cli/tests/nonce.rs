@@ -33,10 +33,9 @@ async fn test_nonce(
     compute_unit_price: Option<u64>,
 ) {
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_no_fees(
-        mint_pubkey,
+        &mint_keypair,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,
     )
@@ -227,10 +226,9 @@ async fn test_create_account_with_seed() {
     const ONE_SIG_FEE: u64 = 5000;
     agave_logger::setup();
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_custom_fees(
-        mint_pubkey,
+        &mint_keypair,
         ONE_SIG_FEE,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,

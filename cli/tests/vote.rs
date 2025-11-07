@@ -25,10 +25,9 @@ use {
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_vote_authorize_and_withdraw(compute_unit_price: Option<u64>) {
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_no_fees(
-        mint_pubkey,
+        &mint_keypair,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,
     )
@@ -243,10 +242,9 @@ async fn test_vote_authorize_and_withdraw(compute_unit_price: Option<u64>) {
 #[test_case(Some(1_000_000); "with_compute_unit_price")]
 async fn test_offline_vote_authorize_and_withdraw(compute_unit_price: Option<u64>) {
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_no_fees(
-        mint_pubkey,
+        &mint_keypair,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,
     )

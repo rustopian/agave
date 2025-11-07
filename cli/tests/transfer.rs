@@ -35,10 +35,9 @@ async fn test_transfer(skip_preflight: bool) {
     let fee_one_sig = FeeStructure::default().get_max_fee(1, 0);
     let fee_two_sig = FeeStructure::default().get_max_fee(2, 0);
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_custom_fees(
-        mint_pubkey,
+        &mint_keypair,
         fee_one_sig,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,
@@ -341,10 +340,9 @@ async fn test_transfer_multisession_signing() {
     let fee_one_sig = FeeStructure::default().get_max_fee(1, 0);
     let fee_two_sig = FeeStructure::default().get_max_fee(2, 0);
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_custom_fees(
-        mint_pubkey,
+        &mint_keypair,
         fee_one_sig,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,
@@ -494,10 +492,9 @@ async fn test_transfer_all(compute_unit_price: Option<u64>) {
     agave_logger::setup();
     let lamports_per_signature = FeeStructure::default().get_max_fee(1, 0);
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_custom_fees(
-        mint_pubkey,
+        &mint_keypair,
         lamports_per_signature,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,
@@ -577,10 +574,9 @@ async fn test_transfer_all(compute_unit_price: Option<u64>) {
 async fn test_transfer_unfunded_recipient() {
     agave_logger::setup();
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_custom_fees(
-        mint_pubkey,
+        &mint_keypair,
         1,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,
@@ -636,10 +632,9 @@ async fn test_transfer_with_seed() {
     agave_logger::setup();
     let fee = FeeStructure::default().get_max_fee(1, 0);
     let mint_keypair = Keypair::new();
-    let mint_pubkey = mint_keypair.pubkey();
-    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair);
+    let faucet_addr = run_local_faucet_with_unique_port_for_tests(mint_keypair.insecure_clone());
     let test_validator = TestValidator::async_with_custom_fees(
-        mint_pubkey,
+        &mint_keypair,
         fee,
         Some(faucet_addr),
         SocketAddrSpace::Unspecified,
