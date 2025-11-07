@@ -8,6 +8,7 @@ use {
         transaction_balances::compile_collected_balances,
         use_snapshot_archives_at_startup::UseSnapshotArchivesAtStartup,
     },
+    agave_snapshots::snapshot_config::SnapshotConfig,
     chrono_humanize::{Accuracy, HumanTime, Tense},
     crossbeam_channel::Sender,
     itertools::Itertools,
@@ -37,7 +38,6 @@ use {
         installed_scheduler_pool::BankWithScheduler,
         prioritization_fee_cache::PrioritizationFeeCache,
         runtime_config::RuntimeConfig,
-        snapshot_config::SnapshotConfig,
         snapshot_controller::SnapshotController,
         transaction_batch::{OwnedOrBorrowed, TransactionBatch},
         vote_sender_types::ReplayVoteSender,
@@ -2392,7 +2392,7 @@ pub mod tests {
         solana_vote::{vote_account::VoteAccount, vote_transaction},
         solana_vote_program::{
             self,
-            vote_state::{TowerSync, VoteStateV3, VoteStateVersions, MAX_LOCKOUT_HISTORY},
+            vote_state::{TowerSync, VoteStateV4, VoteStateVersions, MAX_LOCKOUT_HISTORY},
         },
         std::{collections::BTreeSet, slice, sync::RwLock},
         test_case::{test_case, test_matrix},
@@ -2455,7 +2455,7 @@ pub mod tests {
 
     // Intentionally make slot 1 faulty and ensure that processing sees it as dead
     fn do_test_process_blockstore_with_missing_hashes(blockstore_access_type: AccessType) {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let hashes_per_tick = 2;
         let GenesisConfigInfo {
@@ -2511,7 +2511,7 @@ pub mod tests {
 
     #[test]
     fn test_process_blockstore_with_invalid_slot_tick_count() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let ticks_per_slot = genesis_config.ticks_per_slot;
@@ -2573,7 +2573,7 @@ pub mod tests {
 
     #[test]
     fn test_process_blockstore_with_slot_with_trailing_entry() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo {
             mint_keypair,
@@ -2623,7 +2623,7 @@ pub mod tests {
 
     #[test]
     fn test_process_blockstore_with_incomplete_slot() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let ticks_per_slot = genesis_config.ticks_per_slot;
@@ -2708,7 +2708,7 @@ pub mod tests {
 
     #[test]
     fn test_process_blockstore_with_two_forks_and_squash() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let ticks_per_slot = genesis_config.ticks_per_slot;
@@ -2787,7 +2787,7 @@ pub mod tests {
 
     #[test]
     fn test_process_blockstore_with_two_forks() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let ticks_per_slot = genesis_config.ticks_per_slot;
@@ -2877,7 +2877,7 @@ pub mod tests {
 
     #[test]
     fn test_process_blockstore_with_dead_slot() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let ticks_per_slot = genesis_config.ticks_per_slot;
@@ -2924,7 +2924,7 @@ pub mod tests {
 
     #[test]
     fn test_process_blockstore_with_dead_child() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let ticks_per_slot = genesis_config.ticks_per_slot;
@@ -2984,7 +2984,7 @@ pub mod tests {
 
     #[test]
     fn test_root_with_all_dead_children() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let ticks_per_slot = genesis_config.ticks_per_slot;
@@ -3017,7 +3017,7 @@ pub mod tests {
 
     #[test]
     fn test_process_blockstore_epoch_boundary_root() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let ticks_per_slot = genesis_config.ticks_per_slot;
@@ -3108,7 +3108,7 @@ pub mod tests {
 
     #[test]
     fn test_process_empty_entry_is_registered() {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo {
             genesis_config,
@@ -3138,7 +3138,7 @@ pub mod tests {
 
     #[test]
     fn test_process_ledger_simple() {
-        solana_logger::setup();
+        agave_logger::setup();
         let leader_pubkey = solana_pubkey::new_rand();
         let mint = 100;
         let hashes_per_tick = 10;
@@ -3465,7 +3465,7 @@ pub mod tests {
 
     #[test]
     fn test_transaction_result_does_not_affect_bankhash() {
-        solana_logger::setup();
+        agave_logger::setup();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
@@ -3640,7 +3640,7 @@ pub mod tests {
     fn test_process_entries_2nd_entry_collision_with_self_and_error(
         relax_intrabatch_account_locks: bool,
     ) {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo {
             genesis_config,
@@ -3750,7 +3750,7 @@ pub mod tests {
     #[test_case(false; "old")]
     #[test_case(true; "simd83")]
     fn test_process_entry_duplicate_transaction(relax_intrabatch_account_locks: bool) {
-        solana_logger::setup();
+        agave_logger::setup();
 
         let GenesisConfigInfo {
             genesis_config,
@@ -4322,7 +4322,7 @@ pub mod tests {
     fn test_process_entries_stress() {
         // this test throws lots of rayon threads at process_entries()
         //  finds bugs in very low-layer stuff
-        solana_logger::setup();
+        agave_logger::setup();
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
@@ -4645,7 +4645,7 @@ pub mod tests {
         blockstore_root: Option<Slot>,
         blockstore_access_type: AccessType,
     ) {
-        solana_logger::setup();
+        agave_logger::setup();
         /*
             Build fork structure:
                  slot 0
@@ -4839,15 +4839,15 @@ pub mod tests {
             roots_stakes
                 .into_iter()
                 .map(|(root, stake)| {
-                    let mut vote_state = VoteStateV3::default();
+                    let mut vote_state = VoteStateV4::default();
                     vote_state.root_slot = Some(root);
                     let mut vote_account = AccountSharedData::new(
                         1,
-                        VoteStateV3::size_of(),
+                        VoteStateV4::size_of(),
                         &solana_vote_program::id(),
                     );
-                    let versioned = VoteStateVersions::new_v3(vote_state);
-                    VoteStateV3::serialize(&versioned, vote_account.data_as_mut_slice()).unwrap();
+                    let versioned = VoteStateVersions::new_v4(vote_state);
+                    VoteStateV4::serialize(&versioned, vote_account.data_as_mut_slice()).unwrap();
                     (
                         solana_pubkey::new_rand(),
                         (stake, VoteAccount::try_from(vote_account).unwrap()),
@@ -5056,7 +5056,7 @@ pub mod tests {
     }
 
     fn do_test_schedule_batches_for_execution(should_succeed: bool) {
-        solana_logger::setup();
+        agave_logger::setup();
         let dummy_leader_pubkey = solana_pubkey::new_rand();
         let GenesisConfigInfo {
             genesis_config,
@@ -5162,7 +5162,7 @@ pub mod tests {
         tx_result: TxResult,
         poh_result: Result<Option<usize>>,
     ) {
-        solana_logger::setup();
+        agave_logger::setup();
         let dummy_leader_pubkey = solana_pubkey::new_rand();
         let GenesisConfigInfo {
             genesis_config,

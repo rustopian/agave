@@ -10,9 +10,11 @@ license = { workspace = true }
 edition = { workspace = true }
 
 [features]
+agave-unstable-api = []
 frozen-abi = ["dep:solana-frozen-abi", "dep:solana-frozen-abi-macro"]
 
 [dependencies]
+agave-logger = { workspace = true }
 serde = { workspace = true }
 solana-bls-signatures = { workspace = true, features = [
     "bytemuck", "solana-signer-derive",
@@ -25,7 +27,6 @@ solana-frozen-abi-macro = { workspace = true, optional = true, features = [
     "frozen-abi",
 ] }
 solana-hash = { workspace = true, features = ["serde"] }
-solana-logger = { workspace = true }
 
 [lints]
 workspace = true

@@ -9,7 +9,6 @@ use {
         sysvar_cache::SysvarCache,
     },
     solana_account::{create_account_shared_data_for_test, AccountSharedData},
-    solana_clock::Slot,
     solana_epoch_schedule::EpochSchedule,
     solana_hash::Hash,
     solana_instruction::{error::InstructionError, AccountMeta, Instruction},
@@ -33,19 +32,21 @@ use {
     solana_svm_transaction::{instruction::SVMInstruction, svm_message::SVMMessage},
     solana_svm_type_overrides::sync::Arc,
     solana_transaction_context::{
-        transaction_accounts::KeyedAccountSharedData, IndexOfAccount, InstructionAccount,
-        InstructionContext, TransactionContext, MAX_ACCOUNTS_PER_TRANSACTION,
+        instruction::InstructionContext, instruction_accounts::InstructionAccount,
+        transaction_accounts::KeyedAccountSharedData, IndexOfAccount, TransactionContext,
+        MAX_ACCOUNTS_PER_TRANSACTION,
     },
     std::{
         alloc::Layout,
+        borrow::Cow,
         cell::RefCell,
         fmt::{self, Debug},
         rc::Rc,
     },
 };
 
-pub type BuiltinFunctionWithContext = BuiltinFunction<InvokeContext<'static>>;
-pub type Executable = GenericExecutable<InvokeContext<'static>>;
+pub type BuiltinFunctionWithContext = BuiltinFunction<InvokeContext<'static, 'static>>;
+pub type Executable = GenericExecutable<InvokeContext<'static, 'static>>;
 pub type RegisterTrace<'a> = &'a [[u64; 12]];
 
 /// Adapter so we can unify the interfaces of built-in programs and syscalls
@@ -86,7 +87,7 @@ macro_rules! declare_process_instruction {
     };
 }
 
-impl ContextObject for InvokeContext<'_> {
+impl ContextObject for InvokeContext<'_, '_> {
     fn consume(&mut self, amount: u64) {
         // 1 to 1 instruction to compute unit mapping
         // ignore overflow, Ebpf will bail if exceeded
@@ -140,6 +141,8 @@ pub struct EnvironmentConfig<'a> {
     pub blockhash_lamports_per_signature: u64,
     epoch_stake_callback: &'a dyn InvokeContextCallback,
     feature_set: &'a SVMFeatureSet,
+    pub program_runtime_environments_for_execution: &'a ProgramRuntimeEnvironments,
+    pub program_runtime_environments_for_deployment: &'a ProgramRuntimeEnvironments,
     sysvar_cache: &'a SysvarCache,
 }
 impl<'a> EnvironmentConfig<'a> {
@@ -148,6 +151,8 @@ impl<'a> EnvironmentConfig<'a> {
         blockhash_lamports_per_signature: u64,
         epoch_stake_callback: &'a dyn InvokeContextCallback,
         feature_set: &'a SVMFeatureSet,
+        program_runtime_environments_for_execution: &'a ProgramRuntimeEnvironments,
+        program_runtime_environments_for_deployment: &'a ProgramRuntimeEnvironments,
         sysvar_cache: &'a SysvarCache,
     ) -> Self {
         Self {
@@ -155,6 +160,8 @@ impl<'a> EnvironmentConfig<'a> {
             blockhash_lamports_per_signature,
             epoch_stake_callback,
             feature_set,
+            program_runtime_environments_for_execution,
+            program_runtime_environments_for_deployment,
             sysvar_cache,
         }
     }
@@ -175,9 +182,9 @@ pub struct SerializedAccountMetadata {
 }
 
 /// Main pipeline from runtime to program execution.
-pub struct InvokeContext<'a> {
+pub struct InvokeContext<'a, 'ix_data> {
     /// Information about the currently executing transaction.
-    pub transaction_context: &'a mut TransactionContext,
+    pub transaction_context: &'a mut TransactionContext<'ix_data>,
     /// The local program cache for the transaction batch.
     pub program_cache_for_tx_batch: &'a mut ProgramCacheForTxBatch,
     /// Runtime configurations used to provision the invocation environment.
@@ -198,10 +205,10 @@ pub struct InvokeContext<'a> {
     register_traces: Vec<(usize, Vec<[u64; 12]>)>,
 }
 
-impl<'a> InvokeContext<'a> {
+impl<'a, 'ix_data> InvokeContext<'a, 'ix_data> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        transaction_context: &'a mut TransactionContext,
+        transaction_context: &'a mut TransactionContext<'ix_data>,
         program_cache_for_tx_batch: &'a mut ProgramCacheForTxBatch,
         environment_config: EnvironmentConfig<'a>,
         log_collector: Option<Rc<RefCell<LogCollector>>>,
@@ -221,17 +228,6 @@ impl<'a> InvokeContext<'a> {
             syscall_context: Vec::new(),
             register_traces: Vec::new(),
         }
-    }
-
-    pub fn get_environments_for_slot(
-        &self,
-        effective_slot: Slot,
-    ) -> Result<&ProgramRuntimeEnvironments, InstructionError> {
-        let epoch_schedule = self.environment_config.sysvar_cache.get_epoch_schedule()?;
-        let epoch = epoch_schedule.get_epoch(effective_slot);
-        Ok(self
-            .program_cache_for_tx_batch
-            .get_environments_for_epoch(epoch))
     }
 
     /// Push a stack frame onto the invocation stack
@@ -434,7 +430,7 @@ impl<'a> InvokeContext<'a> {
             program_account_index,
             instruction_accounts,
             transaction_callee_map,
-            instruction.data,
+            Cow::Owned(instruction.data),
         )?;
         Ok(())
     }
@@ -446,6 +442,7 @@ impl<'a> InvokeContext<'a> {
         message: &impl SVMMessage,
         instruction: &SVMInstruction,
         program_account_index: IndexOfAccount,
+        data: &'ix_data [u8],
     ) -> Result<(), InstructionError> {
         // We reference accounts by an u8 index, so we have a total of 256 accounts.
         // This algorithm allocates the array on the stack for speed.
@@ -479,7 +476,7 @@ impl<'a> InvokeContext<'a> {
             program_account_index,
             instruction_accounts,
             transaction_callee_map,
-            instruction.data.to_vec(),
+            Cow::Borrowed(data),
         )?;
         Ok(())
     }
@@ -499,7 +496,7 @@ impl<'a> InvokeContext<'a> {
     }
 
     /// Processes a precompile instruction
-    pub fn process_precompile<'ix_data>(
+    pub fn process_precompile(
         &mut self,
         program_id: &Pubkey,
         instruction_data: &[u8],
@@ -566,8 +563,8 @@ impl<'a> InvokeContext<'a> {
         let empty_memory_mapping =
             MemoryMapping::new(Vec::new(), &mock_config, SBPFVersion::V0).unwrap();
         let mut vm = EbpfVm::new(
-            self.program_cache_for_tx_batch
-                .environments
+            self.environment_config
+                .program_runtime_environments_for_execution
                 .program_runtime_v2
                 .clone(),
             SBPFVersion::V0,
@@ -648,6 +645,11 @@ impl<'a> InvokeContext<'a> {
     /// Get the current feature set.
     pub fn get_feature_set(&self) -> &SVMFeatureSet {
         self.environment_config.feature_set
+    }
+
+    pub fn get_program_runtime_environments_for_deployment(&self) -> &ProgramRuntimeEnvironments {
+        self.environment_config
+            .program_runtime_environments_for_deployment
     }
 
     pub fn is_stake_raise_minimum_delegation_to_1_sol_active(&self) -> bool {
@@ -782,7 +784,7 @@ macro_rules! with_mock_invoke_context_with_feature_set {
                 __private::{Hash, ReadableAccount, Rent, TransactionContext},
                 execution_budget::{SVMTransactionExecutionBudget, SVMTransactionExecutionCost},
                 invoke_context::{EnvironmentConfig, InvokeContext},
-                loaded_programs::ProgramCacheForTxBatch,
+                loaded_programs::{ProgramCacheForTxBatch, ProgramRuntimeEnvironments},
                 sysvar_cache::SysvarCache,
             },
         };
@@ -817,11 +819,14 @@ macro_rules! with_mock_invoke_context_with_feature_set {
                 }
             }
         });
+        let program_runtime_environments = ProgramRuntimeEnvironments::default();
         let environment_config = EnvironmentConfig::new(
             Hash::default(),
             0,
             &MockInvokeContextCallback {},
             $feature_set,
+            &program_runtime_environments,
+            &program_runtime_environments,
             &sysvar_cache,
         );
         let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
@@ -831,7 +836,9 @@ macro_rules! with_mock_invoke_context_with_feature_set {
             environment_config,
             Some(LogCollector::new_ref()),
             compute_budget,
-            SVMTransactionExecutionCost::default(),
+            SVMTransactionExecutionCost::new_with_defaults(
+                $feature_set.increase_cpi_account_info_limit,
+            ),
         );
     };
 }
@@ -914,6 +921,13 @@ pub fn mock_process_instruction_with_feature_set<
     program_cache_for_tx_batch.replenish(
         *loader_id,
         Arc::new(ProgramCacheEntry::new_builtin(0, 0, builtin_function)),
+    );
+    program_cache_for_tx_batch.set_slot_for_tests(
+        invoke_context
+            .get_sysvar_cache()
+            .get_clock()
+            .map(|clock| clock.slot)
+            .unwrap_or(1),
     );
     invoke_context.program_cache_for_tx_batch = &mut program_cache_for_tx_batch;
     pre_adjustments(&mut invoke_context);
@@ -1464,7 +1478,12 @@ mod tests {
         let svm_instruction =
             SVMInstruction::from(sanitized.message().instructions().first().unwrap());
         invoke_context
-            .prepare_next_top_level_instruction(&sanitized, &svm_instruction, 90)
+            .prepare_next_top_level_instruction(
+                &sanitized,
+                &svm_instruction,
+                90,
+                svm_instruction.data,
+            )
             .unwrap();
 
         test_case_1(&invoke_context);
@@ -1473,7 +1492,12 @@ mod tests {
         let svm_instruction =
             SVMInstruction::from(sanitized.message().instructions().get(1).unwrap());
         invoke_context
-            .prepare_next_top_level_instruction(&sanitized, &svm_instruction, 90)
+            .prepare_next_top_level_instruction(
+                &sanitized,
+                &svm_instruction,
+                90,
+                svm_instruction.data,
+            )
             .unwrap();
 
         test_case_2(&invoke_context);
@@ -1537,7 +1561,12 @@ mod tests {
             SVMInstruction::from(sanitized.message().instructions().first().unwrap());
 
         invoke_context
-            .prepare_next_top_level_instruction(&sanitized, &svm_instruction, 90)
+            .prepare_next_top_level_instruction(
+                &sanitized,
+                &svm_instruction,
+                90,
+                svm_instruction.data,
+            )
             .unwrap();
 
         {
