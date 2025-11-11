@@ -157,12 +157,12 @@ impl GenerateVoteTxResult {
 
 // Implement a destructor for the ReplayStage thread to signal it exited
 // even on panics
-struct Finalizer {
+pub(crate) struct Finalizer {
     exit_sender: Arc<AtomicBool>,
 }
 
 impl Finalizer {
-    fn new(exit_sender: Arc<AtomicBool>) -> Self {
+    pub(crate) fn new(exit_sender: Arc<AtomicBool>) -> Self {
         Finalizer { exit_sender }
     }
 }
@@ -2053,7 +2053,7 @@ impl ReplayStage {
         current_leader: &mut Option<Pubkey>,
         new_leader: &Pubkey,
     ) {
-        if let Some(ref current_leader) = current_leader {
+        if let Some(current_leader) = current_leader.as_ref() {
             if current_leader != new_leader {
                 let msg = if current_leader == my_pubkey {
                     ". I am no longer the leader"
@@ -4342,7 +4342,7 @@ impl ReplayStage {
             generate_new_bank_forks_write_lock.as_us();
     }
 
-    fn new_bank_from_parent_with_notify(
+    pub(crate) fn new_bank_from_parent_with_notify(
         parent: Arc<Bank>,
         slot: u64,
         root_slot: u64,
@@ -7236,7 +7236,7 @@ pub(crate) mod tests {
             ..
         } = replay_blockstore_components(Some(forks), 1, None);
 
-        let VoteSimulator {
+        let &mut VoteSimulator {
             ref mut progress,
             ref bank_forks,
             ..
@@ -7330,7 +7330,7 @@ pub(crate) mod tests {
             ..
         } = replay_components;
 
-        let VoteSimulator {
+        let &mut VoteSimulator {
             ref mut progress,
             ref bank_forks,
             ref mut tbft_structs,
@@ -8824,7 +8824,7 @@ pub(crate) mod tests {
             ..
         } = replay_blockstore_components(Some(forks), 1, None);
 
-        let VoteSimulator {
+        let &mut VoteSimulator {
             ref mut progress,
             ref bank_forks,
             ..

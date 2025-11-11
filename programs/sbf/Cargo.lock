@@ -267,7 +267,7 @@ dependencies = [
  "crossbeam-channel",
  "fd-lock",
  "indicatif 0.18.2",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
@@ -356,7 +356,7 @@ dependencies = [
  "crossbeam-channel",
  "dashmap",
  "histogram",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "log",
  "lru",
  "parking_lot 0.12.2",
@@ -2054,9 +2054,9 @@ dependencies = [
 
 [[package]]
 name = "dlopen2"
-version = "0.5.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09b4f5f101177ff01b8ec4ecc81eead416a8aa42819a2869311b3420fa114ffa"
+checksum = "b54f373ccf864bf587a89e880fb7610f8d73f3045f13580948ccbcaff26febff"
 dependencies = [
  "dlopen2_derive",
  "libc",
@@ -2066,9 +2066,9 @@ dependencies = [
 
 [[package]]
 name = "dlopen2_derive"
-version = "0.3.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6cbae11b3de8fce2a456e8ea3dada226b35fe791f0dc1d360c0941f0bb681f3"
+checksum = "788160fb30de9cdd857af31c6a2675904b16ece8fc2737b2c7127ba368c9d0f4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3386,9 +3386,9 @@ dependencies = [
 
 [[package]]
 name = "io-uring"
-version = "0.7.10"
+version = "0.7.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "046fa2d4d00aea763528b4950358d0ead425372445dc8ff86312b3c69ff7727b"
+checksum = "fdd7bddefd0a8833b88a4b68f90dae22c7450d11b354198baee3874fd811b344"
 dependencies = [
  "bitflags 2.10.0",
  "cfg-if 1.0.4",
@@ -5696,9 +5696,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
-version = "3.15.0"
+version = "3.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6093cd8c01b25262b84927e0f7151692158fab02d961e04c979d3903eba7ecc5"
+checksum = "aa66c845eee442168b2c8134fec70ac50dc20e760769c8ba0ad1319ca1959b04"
 dependencies = [
  "serde_core",
  "serde_with_macros",
@@ -5706,9 +5706,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with_macros"
-version = "3.15.0"
+version = "3.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7e6c180db0816026a61afa1cff5344fb7ebded7e4d3062772179f2501481c27"
+checksum = "b91a903660542fced4e99881aa481bdbaec1634568ee02e0b8bd57c64cb38955"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -6029,7 +6029,7 @@ dependencies = [
  "crossbeam-channel",
  "dashmap",
  "indexmap 2.11.4",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "log",
  "lz4",
  "memmap2 0.9.8",
@@ -6323,6 +6323,7 @@ dependencies = [
 name = "solana-bucket-map"
 version = "4.0.0-alpha.0"
 dependencies = [
+ "ahash 0.8.11",
  "bv",
  "bytemuck",
  "bytemuck_derive",
@@ -6663,7 +6664,7 @@ dependencies = [
  "derive_more 2.0.1",
  "futures 0.3.31",
  "histogram",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "libc",
  "log",
  "lru",
@@ -7177,7 +7178,7 @@ dependencies = [
  "crossbeam-channel",
  "flate2",
  "indexmap 2.11.4",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "log",
  "lru",
  "num-traits",
@@ -7380,7 +7381,7 @@ dependencies = [
  "eager",
  "fs_extra",
  "futures 0.3.31",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "lazy-lru",
  "log",
  "lru",
@@ -7595,7 +7596,7 @@ dependencies = [
  "bytes",
  "cfg-if 1.0.4",
  "dashmap",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "log",
  "nix",
  "rand 0.8.5",
@@ -7879,7 +7880,7 @@ version = "4.0.0-alpha.0"
 dependencies = [
  "base64 0.22.1",
  "bincode",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "log",
  "percentage",
  "rand 0.8.5",
@@ -8020,7 +8021,7 @@ dependencies = [
  "async-lock",
  "async-trait",
  "futures 0.3.31",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "log",
  "quinn",
  "quinn-proto",
@@ -8113,7 +8114,7 @@ dependencies = [
  "bs58",
  "crossbeam-channel",
  "dashmap",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
@@ -8309,7 +8310,7 @@ dependencies = [
  "dir-diff",
  "fnv",
  "im",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "libc",
  "log",
  "lz4",
@@ -8458,7 +8459,7 @@ dependencies = [
  "borsh",
  "byteorder 1.5.0",
  "elf",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "log",
  "miow",
  "net2",
@@ -9210,9 +9211,9 @@ dependencies = [
 
 [[package]]
 name = "solana-sbpf"
-version = "0.13.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b17d5d12dd959f2b219dabad634a7994ad2434b5c91b9d0025a77acdce45f41"
+checksum = "b15b079e08471a9dbfe1e48b2c7439c85aa2a055cbd54eddd8bd257b0a7dbb29"
 dependencies = [
  "byteorder 1.5.0",
  "combine 3.8.1",
@@ -9309,7 +9310,7 @@ version = "4.0.0-alpha.0"
 dependencies = [
  "async-trait",
  "crossbeam-channel",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "log",
  "solana-client",
  "solana-clock",
@@ -9554,7 +9555,7 @@ dependencies = [
  "futures-util",
  "histogram",
  "indexmap 2.11.4",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "libc",
  "log",
  "nix",
@@ -10075,7 +10076,7 @@ dependencies = [
  "caps",
  "crossbeam-channel",
  "futures 0.3.31",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "lazy-lru",
  "log",
  "lru",
@@ -10136,6 +10137,7 @@ name = "solana-unified-scheduler-logic"
 version = "4.0.0-alpha.0"
 dependencies = [
  "assert_matches",
+ "solana-clock",
  "solana-pubkey",
  "solana-runtime-transaction",
  "solana-transaction",
@@ -10200,7 +10202,7 @@ name = "solana-vote"
 version = "4.0.0-alpha.0"
 dependencies = [
  "bincode",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "log",
  "rand 0.8.5",
  "serde",
@@ -10384,7 +10386,7 @@ dependencies = [
  "bytemuck",
  "bytemuck_derive",
  "curve25519-dalek 4.1.3",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "merlin",
  "num-derive",
  "num-traits",

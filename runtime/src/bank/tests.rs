@@ -584,7 +584,8 @@ impl Bank {
         reward_calc_tracer: Option<impl RewardCalcTracer>,
     ) -> StakeDelegationsMap {
         let stakes = self.stakes_cache.stakes();
-        let stake_delegations = self.filter_stake_delegations(&stakes);
+        let stake_delegations = stakes.stake_delegations_vec();
+        let stake_delegations = self.filter_stake_delegations(stake_delegations);
         // Obtain all unique voter pubkeys from stake delegations.
         fn merge(mut acc: HashSet<Pubkey>, other: HashSet<Pubkey>) -> HashSet<Pubkey> {
             if acc.len() < other.len() {
@@ -596,6 +597,7 @@ impl Bank {
         let voter_pubkeys = thread_pool.install(|| {
             stake_delegations
                 .par_iter()
+                .filter_map(|stake_delegation| stake_delegation)
                 .fold(
                     HashSet::default,
                     |mut voter_pubkeys, (_stake_pubkey, stake_account)| {
@@ -663,7 +665,8 @@ impl Bank {
         };
         thread_pool.install(|| {
             stake_delegations
-                .into_par_iter()
+                .par_iter()
+                .filter_map(|stake_delegation| stake_delegation)
                 .for_each(push_stake_delegation);
         });
         stake_delegations_map
@@ -4523,7 +4526,7 @@ fn test_nonce_fee_calculator_updates() {
         .and_then(|acc| {
             let nonce_versions = StateMut::<nonce::versions::Versions>::state(&acc);
             match nonce_versions.ok()?.state() {
-                nonce::state::State::Initialized(ref data) => {
+                nonce::state::State::Initialized(data) => {
                     Some((data.blockhash(), data.fee_calculator))
                 }
                 _ => None,
@@ -4555,7 +4558,7 @@ fn test_nonce_fee_calculator_updates() {
         .and_then(|acc| {
             let nonce_versions = StateMut::<nonce::versions::Versions>::state(&acc);
             match nonce_versions.ok()?.state() {
-                nonce::state::State::Initialized(ref data) => {
+                nonce::state::State::Initialized(data) => {
                     Some((data.blockhash(), data.fee_calculator))
                 }
                 _ => None,
@@ -4587,7 +4590,7 @@ fn test_nonce_fee_calculator_updates_tx_wide_cap() {
         .and_then(|acc| {
             let nonce_versions = StateMut::<nonce::versions::Versions>::state(&acc);
             match nonce_versions.ok()?.state() {
-                nonce::state::State::Initialized(ref data) => {
+                nonce::state::State::Initialized(data) => {
                     Some((data.blockhash(), data.fee_calculator))
                 }
                 _ => None,
@@ -4619,7 +4622,7 @@ fn test_nonce_fee_calculator_updates_tx_wide_cap() {
         .and_then(|acc| {
             let nonce_versions = StateMut::<nonce::versions::Versions>::state(&acc);
             match nonce_versions.ok()?.state() {
-                nonce::state::State::Initialized(ref data) => {
+                nonce::state::State::Initialized(data) => {
                     Some((data.blockhash(), data.fee_calculator))
                 }
                 _ => None,
