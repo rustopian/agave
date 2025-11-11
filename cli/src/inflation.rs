@@ -81,6 +81,7 @@ pub async fn process_inflation_subcommand(
         InflationCliCommand::Show => process_show(rpc_client, config).await,
         InflationCliCommand::Rewards(addresses, rewards_epoch) => {
             process_rewards(rpc_client, config, addresses, *rewards_epoch).await
+        }
     }
 }
 
