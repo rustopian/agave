@@ -1651,7 +1651,7 @@ mod test {
         assert!(account.executable);
     }
 
-    #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_wait_for_program_with_unfunded_payer() {
         let program_id = Pubkey::new_unique();
         let (test_validator, _mint_keypair) = TestValidatorGenesis::default()
