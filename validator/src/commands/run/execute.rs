@@ -6,7 +6,6 @@ use {
         commands::{run::args::RunArgs, FromClapArgMatches},
         ledger_lockfile, lock_ledger,
     },
-    agave_logger::redirect_stderr_to_file,
     agave_snapshots::{
         paths::BANK_SNAPSHOTS_DIR,
         snapshot_config::{SnapshotConfig, SnapshotUsage},
@@ -120,7 +119,7 @@ pub fn execute(
         println!("log file: {}", logfile.display());
     }
     let use_progress_bar = logfile.is_none();
-    let _logger_thread = redirect_stderr_to_file(logfile);
+    agave_logger::initialize_logging(logfile.clone());
 
     info!("{} {}", crate_name!(), solana_version);
     info!("Starting validator with: {:#?}", std::env::args_os());
@@ -382,24 +381,6 @@ pub fn execute(
                 }
             }
         });
-    // accounts-db-read-cache-limit-mb was deprecated in v3.0.0
-    let read_cache_limit_mb =
-        values_of::<usize>(matches, "accounts_db_read_cache_limit_mb").map(|limits| {
-            match limits.len() {
-                // we were given explicit low and high watermark values, so use them
-                2 => (limits[0] * MB, limits[1] * MB),
-                // we were given a single value, so use it for both low and high watermarks
-                1 => (limits[0] * MB, limits[0] * MB),
-                _ => {
-                    // clap will enforce either one or two values is given
-                    unreachable!(
-                        "invalid number of values given to accounts-db-read-cache-limit-mb"
-                    )
-                }
-            }
-        });
-    // clap will enforce only one cli arg is provided, so pick whichever is Some
-    let read_cache_limit_bytes = read_cache_limit_bytes.or(read_cache_limit_mb);
 
     let storage_access = matches
         .value_of("accounts_db_access_storages_method")
@@ -538,6 +519,7 @@ pub fn execute(
     );
 
     let mut validator_config = ValidatorConfig {
+        logfile,
         require_tower: matches.is_present("require_tower"),
         tower_storage,
         halt_at_slot: value_t!(matches, "dev_halt_at_slot", Slot).ok(),
@@ -1073,6 +1055,7 @@ pub fn execute(
         File::create(filename).map_err(|err| format!("unable to create {filename}: {err}"))?;
     }
     info!("Validator initialized");
+    validator.listen_for_signals()?;
     validator.join();
     info!("Validator exiting..");
 

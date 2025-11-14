@@ -2851,7 +2851,7 @@ dependencies = [
  "indexmap 2.11.4",
  "slab",
  "tokio",
- "tokio-util 0.7.16",
+ "tokio-util 0.7.17",
  "tracing",
 ]
 
@@ -5229,7 +5229,7 @@ dependencies = [
  "tokio",
  "tokio-native-tls",
  "tokio-rustls 0.24.1",
- "tokio-util 0.7.16",
+ "tokio-util 0.7.17",
  "tower-service",
  "url 2.5.7",
  "wasm-bindgen",
@@ -5270,7 +5270,7 @@ dependencies = [
  "sync_wrapper 1.0.2",
  "tokio",
  "tokio-rustls 0.26.4",
- "tokio-util 0.7.16",
+ "tokio-util 0.7.17",
  "tower 0.5.2",
  "tower-http",
  "tower-service",
@@ -5322,9 +5322,9 @@ dependencies = [
 
 [[package]]
 name = "rocksdb"
-version = "0.23.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26ec73b20525cb235bad420f911473b69f9fe27cc856c5461bccd7e4af037f43"
+checksum = "ddb7af00d2b17dbd07d82c0063e25411959748ff03e8d4f96134c2ff41fce34f"
 dependencies = [
  "libc",
  "librocksdb-sys",
@@ -6093,7 +6093,7 @@ dependencies = [
  "num_cpus",
  "num_enum",
  "qualifier_attr",
- "rand 0.8.5",
+ "rand 0.9.2",
  "rayon",
  "seqlock",
  "serde",
@@ -6654,7 +6654,7 @@ dependencies = [
  "solana-udp-client",
  "thiserror 2.0.17",
  "tokio",
- "tokio-util 0.7.16",
+ "tokio-util 0.7.17",
 ]
 
 [[package]]
@@ -6801,6 +6801,7 @@ version = "4.0.0-alpha.0"
 dependencies = [
  "agave-banking-stage-ingress-types",
  "agave-feature-set",
+ "agave-logger",
  "agave-scheduler-bindings",
  "agave-scheduling-utils",
  "agave-snapshots",
@@ -6843,6 +6844,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "shaq",
+ "signal-hook",
  "slab",
  "solana-account",
  "solana-accounts-db",
@@ -6934,7 +6936,7 @@ dependencies = [
  "thiserror 2.0.17",
  "tikv-jemallocator",
  "tokio",
- "tokio-util 0.7.16",
+ "tokio-util 0.7.17",
  "trees",
 ]
 
@@ -8423,7 +8425,7 @@ dependencies = [
  "stream-cancel",
  "thiserror 2.0.17",
  "tokio",
- "tokio-util 0.7.16",
+ "tokio-util 0.7.17",
 ]
 
 [[package]]
@@ -8804,7 +8806,7 @@ dependencies = [
  "solana-time-utils",
  "solana-tpu-client-next",
  "tokio",
- "tokio-util 0.7.16",
+ "tokio-util 0.7.17",
 ]
 
 [[package]]
@@ -9063,7 +9065,7 @@ dependencies = [
  "solana-transaction-metrics-tracker",
  "thiserror 2.0.17",
  "tokio",
- "tokio-util 0.7.16",
+ "tokio-util 0.7.17",
  "x509-parser",
 ]
 
@@ -9377,7 +9379,6 @@ dependencies = [
  "solana-net-utils",
  "solana-pubkey",
  "solana-pubsub-client",
- "solana-quic-definitions",
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-signature",
@@ -9393,24 +9394,30 @@ name = "solana-tpu-client-next"
 version = "4.0.0-alpha.0"
 dependencies = [
  "async-trait",
+ "futures 0.3.31",
+ "futures-util",
  "log",
  "lru",
  "quinn",
  "rustls 0.23.34",
  "solana-clock",
+ "solana-commitment-config",
  "solana-connection-cache",
+ "solana-epoch-schedule",
  "solana-keypair",
  "solana-measure",
  "solana-metrics",
+ "solana-pubkey",
  "solana-quic-definitions",
  "solana-rpc-client",
+ "solana-rpc-client-api",
  "solana-streamer",
  "solana-time-utils",
  "solana-tls-utils",
  "solana-tpu-client",
  "thiserror 2.0.17",
  "tokio",
- "tokio-util 0.7.16",
+ "tokio-util 0.7.17",
 ]
 
 [[package]]
@@ -10684,9 +10691,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.16"
+version = "0.7.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14307c986784f72ef81c89db7d9e28d6ac26d16213b109ea501696195e6e3ce5"
+checksum = "2efa149fe76073d6e8fd97ef4f4eca7b67f599660115591483572e406e165594"
 dependencies = [
  "bytes",
  "futures-core",
@@ -10794,7 +10801,7 @@ dependencies = [
  "rand 0.8.5",
  "slab",
  "tokio",
- "tokio-util 0.7.16",
+ "tokio-util 0.7.17",
  "tower-layer",
  "tower-service",
  "tracing",

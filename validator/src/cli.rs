@@ -27,7 +27,6 @@ use {
     solana_faucet::faucet::{self, FAUCET_PORT},
     solana_hash::Hash,
     solana_net_utils::{MINIMUM_VALIDATOR_PORT_RANGE_WIDTH, VALIDATOR_PORT_RANGE},
-    solana_quic_definitions::QUIC_PORT_OFFSET,
     solana_send_transaction_service::send_transaction_service::{self},
     solana_streamer::quic::{
         DEFAULT_MAX_CONNECTIONS_PER_IPADDR_PER_MINUTE,
@@ -130,62 +129,12 @@ fn deprecated_arguments() -> Vec<DeprecatedArg> {
     }
 
     add_arg!(
-        // deprecated in v3.0.0
-        Arg::with_name("accounts_db_clean_threads")
-            .long("accounts-db-clean-threads")
-            .takes_value(true)
-            .value_name("NUMBER")
-            .conflicts_with("accounts_db_background_threads"),
-        replaced_by: "accounts-db-background-threads",
-    );
-    add_arg!(
-        // deprecated in v3.1.0
-        Arg::with_name("accounts_db_hash_threads")
-            .long("accounts-db-hash-threads")
-            .takes_value(true)
-            .value_name("NUMBER"),
-        usage_warning: "There is no more startup background accounts hash calculation",
-    );
-    add_arg!(
-        // deprecated in v3.0.0
-        Arg::with_name("accounts_db_read_cache_limit_mb")
-            .long("accounts-db-read-cache-limit-mb")
-            .value_name("MAX | LOW,HIGH")
-            .takes_value(true)
-            .min_values(1)
-            .max_values(2)
-            .multiple(false)
-            .require_delimiter(true)
-            .help("How large the read cache for account data can become, in mebibytes")
-            .long_help(
-                "How large the read cache for account data can become, in mebibytes. \
-                 If given a single value, it will be the maximum size for the cache. \
-                 If given a pair of values, they will be the low and high watermarks \
-                 for the cache. When the cache exceeds the high watermark, entries will \
-                 be evicted until the size reaches the low watermark."
-            )
-            .hidden(hidden_unless_forced())
-            .conflicts_with("accounts_db_read_cache_limit"),
-            replaced_by: "accounts-db-read-cache-limit",
-    );
-    add_arg!(
-        // deprecated in v3.0.0
-        Arg::with_name("accounts_hash_cache_path")
-            .long("accounts-hash-cache-path")
-            .value_name("PATH")
-            .takes_value(true)
-            .help(
-                "Use PATH as accounts hash cache location \
-                 [default: <LEDGER>/accounts_hash_cache]",
-            ),
-            usage_warning: "The accounts hash cache is obsolete",
-    );
-    add_arg!(Arg::with_name("disable_accounts_disk_index")
-        // (actually) deprecated in v3.1.0
-        .long("disable-accounts-disk-index")
-        .help("Disable the disk-based accounts index if it is enabled by default.")
-        .conflicts_with("enable_accounts_disk_index"),
-        usage_warning: "The disk-based accounts index is disabled by default",
+        // deprecated in v3.1.1
+        Arg::with_name("cuda")
+            .long("cuda")
+            .takes_value(false)
+            .help("Use CUDA"),
+        usage_warning: "CUDA support will be dropped"
     );
     add_arg!(
         // deprecated in v3.0.0
@@ -403,8 +352,6 @@ pub fn port_range_validator(port_range: String) -> Result<(), String> {
                 start,
                 start + MINIMUM_VALIDATOR_PORT_RANGE_WIDTH
             ))
-        } else if end.checked_add(QUIC_PORT_OFFSET).is_none() {
-            Err("Invalid dynamic_port_range.".to_string())
         } else {
             Ok(())
         }
