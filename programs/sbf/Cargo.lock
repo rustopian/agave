@@ -327,6 +327,7 @@ dependencies = [
  "solana-storage-bigtable",
  "solana-streamer",
  "solana-system-interface 3.0.0",
+ "solana-system-interface 3.0.0",
  "solana-test-validator",
  "solana-tpu-client",
  "solana-turbine",
@@ -6089,6 +6090,7 @@ dependencies = [
  "solana-stake-interface",
  "solana-svm-transaction",
  "solana-system-interface 3.0.0",
+ "solana-system-interface 3.0.0",
  "solana-sysvar",
  "solana-time-utils",
  "solana-transaction",
@@ -6351,6 +6353,7 @@ dependencies = [
  "solana-svm-measure",
  "solana-svm-type-overrides",
  "solana-system-interface 3.0.0",
+ "solana-system-interface 3.0.0",
  "solana-transaction-context",
 ]
 
@@ -6478,6 +6481,7 @@ dependencies = [
  "solana-signature",
  "solana-stake-interface",
  "solana-system-interface 3.0.0",
+ "solana-system-interface 3.0.0",
  "solana-transaction",
  "solana-transaction-error",
  "solana-transaction-status",
@@ -6548,6 +6552,7 @@ dependencies = [
  "solana-pubkey 3.0.0",
  "solana-signature",
  "solana-signer",
+ "solana-system-interface 2.0.0",
  "solana-system-interface 2.0.0",
  "solana-transaction",
  "solana-transaction-error",
@@ -6646,6 +6651,7 @@ dependencies = [
  "solana-pubkey 3.0.0",
  "solana-sdk-ids",
  "solana-short-vec",
+ "solana-system-interface 2.0.0",
  "solana-system-interface 2.0.0",
 ]
 
@@ -6785,6 +6791,7 @@ dependencies = [
  "solana-svm-timings",
  "solana-svm-transaction",
  "solana-system-interface 3.0.0",
+ "solana-system-interface 3.0.0",
  "solana-system-transaction",
  "solana-sysvar",
  "solana-time-utils",
@@ -6836,6 +6843,7 @@ dependencies = [
  "solana-runtime-transaction",
  "solana-sdk-ids",
  "solana-svm-transaction",
+ "solana-system-interface 3.0.0",
  "solana-system-interface 3.0.0",
  "solana-transaction-error",
  "solana-vote-program",
@@ -7038,6 +7046,7 @@ dependencies = [
  "solana-pubkey 3.0.0",
  "solana-sdk-ids",
  "solana-system-interface 2.0.0",
+ "solana-system-interface 2.0.0",
  "thiserror 2.0.17",
 ]
 
@@ -7064,6 +7073,7 @@ dependencies = [
  "solana-pubkey 4.0.0",
  "solana-signer",
  "solana-system-interface 2.0.0",
+ "solana-system-interface 2.0.0",
  "solana-system-transaction",
  "solana-transaction",
  "solana-version",
@@ -7088,6 +7098,7 @@ dependencies = [
  "solana-pubkey 3.0.0",
  "solana-rent",
  "solana-sdk-ids",
+ "solana-system-interface 2.0.0",
  "solana-system-interface 2.0.0",
 ]
 
@@ -7317,7 +7328,9 @@ dependencies = [
 [[package]]
 name = "solana-instruction"
 version = "3.1.0"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee1b699a2c1518028a9982e255e0eca10c44d90006542d9d7f9f40dbce3f7c78"
 checksum = "ee1b699a2c1518028a9982e255e0eca10c44d90006542d9d7f9f40dbce3f7c78"
 dependencies = [
  "bincode",
@@ -7325,7 +7338,9 @@ dependencies = [
  "serde",
  "serde_derive",
  "solana-define-syscall 4.0.1",
+ "solana-define-syscall 4.0.1",
  "solana-instruction-error",
+ "solana-pubkey 4.0.0",
  "solana-pubkey 4.0.0",
 ]
 
@@ -7492,6 +7507,7 @@ dependencies = [
  "solana-svm-timings",
  "solana-svm-transaction",
  "solana-system-interface 3.0.0",
+ "solana-system-interface 3.0.0",
  "solana-system-transaction",
  "solana-time-utils",
  "solana-transaction",
@@ -7539,6 +7555,7 @@ dependencies = [
  "solana-pubkey 3.0.0",
  "solana-sdk-ids",
  "solana-system-interface 2.0.0",
+ "solana-system-interface 2.0.0",
 ]
 
 [[package]]
@@ -7553,6 +7570,7 @@ dependencies = [
  "solana-instruction",
  "solana-pubkey 3.0.0",
  "solana-sdk-ids",
+ "solana-system-interface 2.0.0",
  "solana-system-interface 2.0.0",
 ]
 
@@ -7973,6 +7991,7 @@ dependencies = [
  "solana-svm-transaction",
  "solana-svm-type-overrides",
  "solana-system-interface 3.0.0",
+ "solana-system-interface 3.0.0",
  "solana-sysvar",
  "solana-sysvar-id",
  "solana-transaction-context",
@@ -8030,6 +8049,7 @@ dependencies = [
  "solana-svm",
  "solana-svm-log-collector",
  "solana-svm-timings",
+ "solana-system-interface 3.0.0",
  "solana-system-interface 3.0.0",
  "solana-sysvar",
  "solana-sysvar-id",
@@ -8237,6 +8257,7 @@ dependencies = [
  "solana-storage-bigtable",
  "solana-svm",
  "solana-system-interface 3.0.0",
+ "solana-system-interface 3.0.0",
  "solana-system-transaction",
  "solana-sysvar",
  "solana-time-utils",
@@ -8341,6 +8362,7 @@ dependencies = [
  "serde_json",
  "solana-account",
  "solana-account-decoder-client-types",
+ "solana-address 2.0.0",
  "solana-address 2.0.0",
  "solana-clock",
  "solana-commitment-config",
@@ -8468,6 +8490,7 @@ dependencies = [
  "solana-svm-callback",
  "solana-svm-timings",
  "solana-svm-transaction",
+ "solana-system-interface 3.0.0",
  "solana-system-interface 3.0.0",
  "solana-system-program",
  "solana-system-transaction",
@@ -9548,6 +9571,7 @@ dependencies = [
  "solana-program-error",
  "solana-pubkey 3.0.0",
  "solana-system-interface 2.0.0",
+ "solana-system-interface 2.0.0",
  "solana-sysvar",
  "solana-sysvar-id",
 ]
@@ -9694,6 +9718,7 @@ dependencies = [
  "solana-svm-transaction",
  "solana-svm-type-overrides",
  "solana-system-interface 3.0.0",
+ "solana-system-interface 3.0.0",
  "solana-sysvar-id",
  "solana-transaction-context",
  "solana-transaction-error",
@@ -9830,6 +9855,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "solana-system-interface"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14591d6508042ebefb110305d3ba761615927146a26917ade45dc332d8e1ecde"
+dependencies = [
+ "num-traits",
+ "serde",
+ "serde_derive",
+ "solana-address 2.0.0",
+ "solana-instruction",
+ "solana-msg",
+ "solana-program-error",
+]
+
+[[package]]
 name = "solana-system-program"
 version = "4.0.0-alpha.0"
 dependencies = [
@@ -9849,6 +9889,7 @@ dependencies = [
  "solana-svm-log-collector",
  "solana-svm-type-overrides",
  "solana-system-interface 3.0.0",
+ "solana-system-interface 3.0.0",
  "solana-sysvar",
  "solana-transaction-context",
 ]
@@ -9864,6 +9905,7 @@ dependencies = [
  "solana-message",
  "solana-pubkey 3.0.0",
  "solana-signer",
+ "solana-system-interface 2.0.0",
  "solana-system-interface 2.0.0",
  "solana-transaction",
 ]
@@ -10130,6 +10172,7 @@ dependencies = [
  "solana-sdk-ids",
  "solana-signature",
  "solana-stake-interface",
+ "solana-system-interface 3.0.0",
  "solana-system-interface 3.0.0",
  "solana-transaction",
  "solana-transaction-error",
