@@ -298,7 +298,7 @@ dependencies = [
  "solana-account",
  "solana-accounts-db",
  "solana-pubkey 4.0.0",
- "solana-system-interface 2.0.0",
+ "solana-system-interface 3.0.0",
  "solana-version",
 ]
 
@@ -6259,7 +6259,7 @@ dependencies = [
  "solana-runtime",
  "solana-signature",
  "solana-signer",
- "solana-system-interface 2.0.0",
+ "solana-system-interface 3.0.0",
  "solana-system-transaction",
  "solana-time-utils",
  "solana-tpu-client",
@@ -7128,7 +7128,7 @@ dependencies = [
  "solana-signature",
  "solana-signer",
  "solana-stake-interface",
- "solana-system-interface 2.0.0",
+ "solana-system-interface 3.0.0",
  "solana-time-utils",
  "solana-tps-client",
  "solana-tpu-client",
