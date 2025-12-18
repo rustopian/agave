@@ -41,41 +41,6 @@ pub fn parse_system(
                 }),
             })
         }
-        SystemInstruction::CreateAccountAllowPrefund {
-            lamports,
-            space,
-            owner,
-        } => match instruction.accounts.len() {
-            1 => {
-                // With only 1 account, lamports to transfer must be 0 (no payer case)
-                if lamports > 0 {
-                    return Err(ParseInstructionError::InstructionKeyMismatch(
-                        ParsableProgram::System,
-                    ));
-                }
-                Ok(ParsedInstructionEnum {
-                    instruction_type: "createAccountAllowPrefund".to_string(),
-                    info: json!({
-                        "newAccount": account_keys[instruction.accounts[0] as usize].to_string(),
-                        "space": space,
-                        "owner": owner.to_string(),
-                    }),
-                })
-            }
-            2 => Ok(ParsedInstructionEnum {
-                instruction_type: "createAccountAllowPrefund".to_string(),
-                info: json!({
-                    "newAccount": account_keys[instruction.accounts[0] as usize].to_string(),
-                    "source": account_keys[instruction.accounts[1] as usize].to_string(),
-                    "lamports": lamports,
-                    "space": space,
-                    "owner": owner.to_string(),
-                }),
-            }),
-            _ => Err(ParseInstructionError::InstructionKeyMismatch(
-                ParsableProgram::System,
-            )),
-        },
         SystemInstruction::Assign { owner } => {
             check_num_system_accounts(&instruction.accounts, 1)?;
             Ok(ParsedInstructionEnum {
@@ -233,12 +198,41 @@ pub fn parse_system(
                 }),
             })
         }
-        SystemInstruction::CreateAccountAllowPrefund { .. } => {
-            // feature-gated activation to be implemented
-            Err(ParseInstructionError::InstructionNotParsable(
+        SystemInstruction::CreateAccountAllowPrefund {
+            lamports,
+            space,
+            owner,
+        } => match instruction.accounts.len() {
+            1 => {
+                // With only 1 account, lamports to transfer must be 0 (no payer case)
+                if lamports > 0 {
+                    return Err(ParseInstructionError::InstructionKeyMismatch(
+                        ParsableProgram::System,
+                    ));
+                }
+                Ok(ParsedInstructionEnum {
+                    instruction_type: "createAccountAllowPrefund".to_string(),
+                    info: json!({
+                        "newAccount": account_keys[instruction.accounts[0] as usize].to_string(),
+                        "space": space,
+                        "owner": owner.to_string(),
+                    }),
+                })
+            }
+            2 => Ok(ParsedInstructionEnum {
+                instruction_type: "createAccountAllowPrefund".to_string(),
+                info: json!({
+                    "newAccount": account_keys[instruction.accounts[0] as usize].to_string(),
+                    "source": account_keys[instruction.accounts[1] as usize].to_string(),
+                    "lamports": lamports,
+                    "space": space,
+                    "owner": owner.to_string(),
+                }),
+            }),
+            _ => Err(ParseInstructionError::InstructionKeyMismatch(
                 ParsableProgram::System,
-            ))
-        }
+            )),
+        },
     }
 }
 

@@ -350,40 +350,7 @@ declare_process_instruction!(Entrypoint, DEFAULT_COMPUTE_UNITS, |invoke_context|
                 &instruction_context,
             )
         }
-        SystemInstruction::CreateAccountAllowPrefund {
-            lamports,
-            space,
-            owner,
-        } => {
-            if !invoke_context
-                .get_feature_set()
-                .create_account_allow_prefund
-            {
-                return Err(InstructionError::InvalidInstructionData);
-            }
-            let payer_and_lamports = if lamports > 0 {
-                instruction_context.check_number_of_instruction_accounts(2)?;
-                Some((1, lamports))
-            } else {
-                instruction_context.check_number_of_instruction_accounts(1)?;
-                None
-            };
-            let to_address = Address::create(
-                instruction_context.get_key_of_instruction_account(0)?,
-                None,
-                invoke_context,
-            )?;
-            create_account_allow_prefund(
-                0,
-                &to_address,
-                payer_and_lamports,
-                space,
-                &owner,
-                &signers,
-                invoke_context,
-                &instruction_context,
-            )
-        }
+
         SystemInstruction::CreateAccountWithSeed {
             base,
             seed,
@@ -560,9 +527,39 @@ declare_process_instruction!(Entrypoint, DEFAULT_COMPUTE_UNITS, |invoke_context|
             )?;
             assign(&mut account, &address, &owner, &signers, invoke_context)
         }
-        SystemInstruction::CreateAccountAllowPrefund { .. } => {
-            // feature-gated activation to be implemented
-            return Err(InstructionError::InvalidInstructionData);
+        SystemInstruction::CreateAccountAllowPrefund {
+            lamports,
+            space,
+            owner,
+        } => {
+            if !invoke_context
+                .get_feature_set()
+                .create_account_allow_prefund
+            {
+                return Err(InstructionError::InvalidInstructionData);
+            }
+            let payer_and_lamports = if lamports > 0 {
+                instruction_context.check_number_of_instruction_accounts(2)?;
+                Some((1, lamports))
+            } else {
+                instruction_context.check_number_of_instruction_accounts(1)?;
+                None
+            };
+            let to_address = Address::create(
+                instruction_context.get_key_of_instruction_account(0)?,
+                None,
+                invoke_context,
+            )?;
+            create_account_allow_prefund(
+                0,
+                &to_address,
+                payer_and_lamports,
+                space,
+                &owner,
+                &signers,
+                invoke_context,
+                &instruction_context,
+            )
         }
     }
 });
